@@ -33,6 +33,9 @@ load_dotenv()
 
 mentor = st.query_params.get("name", "").upper()
 
+# Debug print
+st.write(f"Query parameter 'name': {mentor}")
+
 # Import the variables
 name = os.getenv(f'{mentor}_NAME')
 topics = os.getenv(f'{mentor}_TOPICS')
