@@ -54,13 +54,28 @@ border_color_choice = os.getenv(f'{mentor}_BORDER_COLOR_CHOICE')
 color_choice = os.getenv(f'{mentor}_COLOR_CHOICE')
 mild_color = os.getenv(f'{mentor}_MILD_COLOR')
 
-root_dir = os.getcwd()  # Get the current working directory (root)
-indices_dir = os.path.join(root_dir, "indices")  # Path to the 'indices' folder
+root_dir = Path.cwd()  # Get the current working directory (root)
+indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
-folders = [
-    item for item in os.listdir(indices_dir/f"{"".join(name.split())}")
-    if os.path.isdir(os.path.join(indices_dir, item))
-]
+# Use Path objects for more robust path handling
+mentor_dir = indices_dir / "".join(name.split())
+st.write(f"Looking for mentor directory: {mentor_dir}")
+
+
+if not mentor_dir.exists():
+    st.error(f"No directory found for mentor: {name}")
+    st.stop()
+
+try:
+    folders = [
+        item.name for item in mentor_dir.iterdir() if item.is_dir()
+    ]
+except Exception as e:
+    st.error(f"Error reading mentor directory: {str(e)}")
+    st.stop()
+
+# Debug print
+st.write(f"Found folders: {folders}")
 
 
 class CustomRetriever(BaseRetriever):
