@@ -29,6 +29,8 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
 
+st.set_page_config(page_title=tabtitle, page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
+
 
 # Load the environment variables from .env file
 load_dotenv()
@@ -172,7 +174,7 @@ unicultdiscsidebar = """If you want to create an AI Mentor similar to mine,<br><
 creatorchatavatar = creatorimg
 questioneravatar = """https://unicult.s3.eu-north-1.amazonaws.com/studentpic+(2).png"""
 
-st.set_page_config(page_title=tabtitle, page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
+#st.set_page_config(page_title=tabtitle, page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
 
 
 # Inject CSS, HTML, and JavaScript into Streamlit
