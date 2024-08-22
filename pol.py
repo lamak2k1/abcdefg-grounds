@@ -146,7 +146,7 @@ def generate_title(prompt, sourcetext):
     except Exception as e:
         # Log the exception details
         print(f"Failed to generate title due to: {str(e)}")
-        return "Error generating title"
+        return f"Failed to generate title due to: {str(e)}"
 
 result='null'
 
