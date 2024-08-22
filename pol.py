@@ -31,49 +31,34 @@ from llama_index.core.chat_engine import ContextChatEngine
 # Load the environment variables from .env file
 load_dotenv()
 
+mentor = st.query_params["name"].upper()
+
 # Import the variables
-name = os.getenv('NAME')
-topics = os.getenv('TOPICS')
-creatorimg = os.getenv('CREATORIMG')
-creatorabout = os.getenv('CREATORABOUT')
-resourcelink1 = os.getenv('RESOURCE_LINK1')
-resourcetitle1 = os.getenv('RESOURCE_TITLE1')
-resourcedesc1 = os.getenv('RESOURCE_DESC1')
-resourceimg1 = os.getenv('RESOURCE_IMG1')
-resourcelink2 = os.getenv('RESOURCE_LINK2')
-resourcetitle2 = os.getenv('RESOURCE_TITLE2')
-resourcedesc2 = os.getenv('RESOURCE_DESC2')
-resourceimg2 = os.getenv('RESOURCE_IMG2')
-backgroundimageurl = os.getenv('BACKGROUND_IMAGE_URL')
-border_color_choice = os.getenv('BORDER_COLOR_CHOICE')
-color_choice = os.getenv('COLOR_CHOICE')
-mild_color = os.getenv('MILD_COLOR')
+name = os.getenv(f'{mentor}_NAME')
+topics = os.getenv(f'{mentor}_TOPICS')
+creatorimg = os.getenv(f'{mentor}_CREATORIMG')
+creatorabout = os.getenv(f'{mentor}_CREATORABOUT')
+resourcelink1 = os.getenv(f'{mentor}_RESOURCE_LINK1')
+resourcetitle1 = os.getenv(f'{mentor}_RESOURCE_TITLE1')
+resourcedesc1 = os.getenv(f'{mentor}_RESOURCE_DESC1')
+resourceimg1 = os.getenv(f'{mentor}_RESOURCE_IMG1')
+resourcelink2 = os.getenv(f'{mentor}_RESOURCE_LINK2')
+resourcetitle2 = os.getenv(f'{mentor}_RESOURCE_TITLE2')
+resourcedesc2 = os.getenv(f'{mentor}_RESOURCE_DESC2')
+resourceimg2 = os.getenv(f'{mentor}_RESOURCE_IMG2')
+backgroundimageurl = os.getenv(f'{mentor}_BACKGROUND_IMAGE_URL')
+border_color_choice = os.getenv(f'{mentor}_BORDER_COLOR_CHOICE')
+color_choice = os.getenv(f'{mentor}_COLOR_CHOICE')
+mild_color = os.getenv(f'{mentor}_MILD_COLOR')
 
 root_dir = os.getcwd()  # Get the current working directory (root)
 indices_dir = os.path.join(root_dir, "indices")  # Path to the 'indices' folder
 
-https_folders = [
-    item for item in os.listdir(indices_dir)
-    if os.path.isdir(os.path.join(indices_dir, item)) and item.startswith("https")
+folders = [
+    item for item in os.listdir(indices_dir/f"{"".join(name.split())}")
+    if os.path.isdir(os.path.join(indices_dir, item))
 ]
 
-# Initialize arrays
-linkedin_folders = []
-youtube_folders = []
-ns_folders = []
-
-# Categorize folders based on their content
-for folder in https_folders:
-    if "linkedin" in folder.lower():
-        linkedin_folders.append(folder)
-    elif "youtube" in folder.lower():
-        youtube_folders.append(folder)
-    else:
-        ns_folders.append(folder)
-
-print("LinkedIn folders:", linkedin_folders)
-print("YouTube folders:", youtube_folders)
-print("Other folders:", ns_folders)
 
 class CustomRetriever(BaseRetriever):
     """Custom retriever that performs combined search across multiple vector indexes."""
@@ -420,53 +405,21 @@ def load_model():
 Settings.embed_model = load_model()
 
 @st.cache_resource  # Cache the function output to avoid recomputation
-def load_sentence_index_ns(ns_folders):
+def load_sentence_index(folders):
     # Your code to load or compute the sentence index goes here
-    ns_indices = []
-    for ns in ns_folders:
-        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{ns}")
+    indices = []
+    for ns in folders:
+        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{"".join(name.split())}/{ns}")
         sentence_index = load_index_from_storage(storage_context)
-        ns_indices.append(sentence_index)
+        indices.append(sentence_index)
         
-    return ns_indices
-
-@st.cache_resource  # Cache the function output to avoid recomputation
-def load_sentence_index_yt(youtube_folders):
-    # Your code to load or compute the sentence index goes here
-    yt_indices = []
-    for yt in youtube_folders:
-        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{yt}")
-        sentence_index = load_index_from_storage(storage_context)
-        yt_indices.append(sentence_index)
-        
-    return yt_indices
-
-@st.cache_resource  # Cache the function output to avoid recomputation
-def load_sentence_index_li():
-    # Your code to load or compute the sentence index goes here
-    storage_context = StorageContext.from_defaults(persist_dir=f"indices/{linkedin_folders[0]}")
-    sentence_index = load_index_from_storage(storage_context)
-    return sentence_index
+    return indices
 
 all_retrievers = []
 
-if ns_folders:
-    sentence_index_ns = load_sentence_index_ns(ns_folders)
-if linkedin_folders:
-    sentence_index_li = load_sentence_index_li() 
-if youtube_folders:
-    sentence_index_yt = load_sentence_index_yt(youtube_folders)
-
-if ns_folders:
-    all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index_ns]
-
-if youtube_folders:
-    yt_retrievers = [ytt.as_retriever(similarity_top_k=3) for ytt in sentence_index_yt]
-    all_retrievers.extend(yt_retrievers)
-
-if linkedin_folders:
-    retriever_li = sentence_index_li.as_retriever(similarity_top_k=3)
-    all_retrievers.append(retriever_li)
+if folders:
+    sentence_index = load_sentence_index(folders)
+    all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index]
 
 combination_retriever = CustomRetriever(all_retrievers, top_n=4)
 
