@@ -29,18 +29,15 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
 
-st.set_page_config(page_title=tabtitle, page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
 
 
 # Load the environment variables from .env file
 load_dotenv()
 
+st.set_page_config(page_title="AI Mentor", page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
+
+
 mentor = st.query_params.get("name", "").upper()
-
-# Debug print
-st.write(f"Query parameter 'name': {mentor}")
-st.write(f"All query parameters: {st.query_params.to_dict()}")
-
 
 # Import the variables
 name = os.getenv(f'{mentor}_NAME')
@@ -61,20 +58,19 @@ color_choice = os.getenv(f'{mentor}_COLOR_CHOICE')
 mild_color = os.getenv(f'{mentor}_MILD_COLOR')
 
 # Debug prints
-st.write(f"Retrieved {mentor}_NAME from .env: {name}")
-st.write(f"All environment variables: {os.environ}")
+print(f"Retrieved {mentor}_NAME from .env: {name}")
+print(f"All environment variables: {os.environ}")
 
 # Handle the case where name is None
 if name is None:
-    st.error(f"No configuration found for mentor: {mentor}")
-    st.stop()
+    print(f"No configuration found for mentor: {mentor}")
 
 root_dir = Path.cwd()  # Get the current working directory (root)
 indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
 # Debug print
-st.write(f"Root directory: {root_dir}")
-st.write(f"Indices directory: {indices_dir}")
+print(f"Root directory: {root_dir}")
+print(f"Indices directory: {indices_dir}")
 
 try:
     # Use Path objects for more robust path handling
@@ -82,19 +78,17 @@ try:
     st.write(f"Looking for mentor directory: {mentor_dir}")
 
     if not mentor_dir.exists():
-        st.error(f"No directory found for mentor: {name}")
-        st.stop()
+        print(f"No directory found for mentor: {name}")
 
     folders = [
         item.name for item in mentor_dir.iterdir() if item.is_dir()
     ]
 
     # Debug print
-    st.write(f"Found folders: {folders}")
+    print(f"Found folders: {folders}")
 
 except Exception as e:
-    st.error(f"Error processing mentor directory: {str(e)}")
-    st.stop()
+    print(f"Error processing mentor directory: {str(e)}")
 
 
 class CustomRetriever(BaseRetriever):
@@ -155,7 +149,7 @@ def generate_title(prompt, sourcetext):
         return response.choices[0].message.content
     except Exception as e:
         # Log the exception details
-        st.error(f"Failed to generate title due to: {str(e)}")
+        print(f"Failed to generate title due to: {str(e)}")
         return "Error generating title"
 
 result='null'
@@ -174,7 +168,7 @@ unicultdiscsidebar = """If you want to create an AI Mentor similar to mine,<br><
 creatorchatavatar = creatorimg
 questioneravatar = """https://unicult.s3.eu-north-1.amazonaws.com/studentpic+(2).png"""
 
-#st.set_page_config(page_title=tabtitle, page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
+st.set_page_config(page_title=tabtitle, page_icon="💬", layout="centered", initial_sidebar_state="collapsed", menu_items=None)
 
 
 # Inject CSS, HTML, and JavaScript into Streamlit
