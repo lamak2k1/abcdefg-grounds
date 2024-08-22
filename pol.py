@@ -37,6 +37,8 @@ mentor = st.query_params.get("name", "").upper()
 
 # Debug print
 st.write(f"Query parameter 'name': {mentor}")
+st.write(f"All query parameters: {st.query_params.to_dict()}")
+
 
 # Import the variables
 name = os.getenv(f'{mentor}_NAME')
@@ -56,28 +58,41 @@ border_color_choice = os.getenv(f'{mentor}_BORDER_COLOR_CHOICE')
 color_choice = os.getenv(f'{mentor}_COLOR_CHOICE')
 mild_color = os.getenv(f'{mentor}_MILD_COLOR')
 
+# Debug prints
+st.write(f"Retrieved {mentor}_NAME from .env: {name}")
+st.write(f"All environment variables: {os.environ}")
+
+# Handle the case where name is None
+if name is None:
+    st.error(f"No configuration found for mentor: {mentor}")
+    st.stop()
+
 root_dir = Path.cwd()  # Get the current working directory (root)
 indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
-# Use Path objects for more robust path handling
-mentor_dir = indices_dir / "".join(name.split())
-st.write(f"Looking for mentor directory: {mentor_dir}")
-
-
-if not mentor_dir.exists():
-    st.error(f"No directory found for mentor: {name}")
-    st.stop()
+# Debug print
+st.write(f"Root directory: {root_dir}")
+st.write(f"Indices directory: {indices_dir}")
 
 try:
+    # Use Path objects for more robust path handling
+    mentor_dir = indices_dir / "".join(name.split())
+    st.write(f"Looking for mentor directory: {mentor_dir}")
+
+    if not mentor_dir.exists():
+        st.error(f"No directory found for mentor: {name}")
+        st.stop()
+
     folders = [
         item.name for item in mentor_dir.iterdir() if item.is_dir()
     ]
-except Exception as e:
-    st.error(f"Error reading mentor directory: {str(e)}")
-    st.stop()
 
-# Debug print
-st.write(f"Found folders: {folders}")
+    # Debug print
+    st.write(f"Found folders: {folders}")
+
+except Exception as e:
+    st.error(f"Error processing mentor directory: {str(e)}")
+    st.stop()
 
 
 class CustomRetriever(BaseRetriever):
