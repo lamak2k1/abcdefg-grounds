@@ -27,6 +27,8 @@ from llama_index.core.retrievers import (
 from llama_index.core import QueryBundle
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
+from pathlib import Path
+
 
 # Load the environment variables from .env file
 load_dotenv()
