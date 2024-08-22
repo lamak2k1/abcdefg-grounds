@@ -75,10 +75,6 @@ print(f"Indices directory: {indices_dir}")
 try:
     # Use Path objects for more robust path handling
     mentor_dir = indices_dir / "".join(name.split())
-    st.write(f"Looking for mentor directory: {mentor_dir}")
-
-    if not mentor_dir.exists():
-        print(f"No directory found for mentor: {name}")
 
     folders = [
         item.name for item in mentor_dir.iterdir() if item.is_dir()
