@@ -31,7 +31,7 @@ from llama_index.core.chat_engine import ContextChatEngine
 # Load the environment variables from .env file
 load_dotenv()
 
-mentor = st.query_params["name"].upper()
+mentor = st.query_params.get("name", "").upper()
 
 # Import the variables
 name = os.getenv(f'{mentor}_NAME')
