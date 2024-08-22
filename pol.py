@@ -137,7 +137,7 @@ def generate_title(prompt, sourcetext):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": constructed_prompt},
             ]
@@ -150,7 +150,7 @@ def generate_title(prompt, sourcetext):
 
 result='null'
 
-Settings.llm = lOpenAI(api_key="sk-proj-QySC3TDzzvpKz8m7Hz2xT3BlbkFJ63iBkWnM9hravKv2oMrC", model = "gpt-4o", temperature=0)
+Settings.llm = lOpenAI(api_key="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", model = "gpt-4o-mini", temperature=0)
 Settings.chunk_size = 256
 Settings.chunk_overlap = 10
 
