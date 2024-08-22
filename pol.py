@@ -63,14 +63,14 @@ print(f"All environment variables: {os.environ}")
 
 # Handle the case where name is None
 if name is None:
-    print(f"No configuration found for mentor: {mentor}")
+    st.write(f"No configuration found for mentor: {mentor}")
 
 root_dir = Path.cwd()  # Get the current working directory (root)
 indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
 # Debug print
-print(f"Root directory: {root_dir}")
-print(f"Indices directory: {indices_dir}")
+st.write(f"Root directory: {root_dir}")
+st.write(f"Indices directory: {indices_dir}")
 
 try:
     # Use Path objects for more robust path handling
@@ -81,10 +81,10 @@ try:
     ]
 
     # Debug print
-    print(f"Found folders: {folders}")
+    st.write(f"Found folders: {folders}")
 
 except Exception as e:
-    print(f"Error processing mentor directory: {str(e)}")
+    st.write(f"Error processing mentor directory: {str(e)}")
 
 
 class CustomRetriever(BaseRetriever):
