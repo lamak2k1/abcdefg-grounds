@@ -567,7 +567,25 @@ if st.session_state.messages[-1]["role"] != "assistant":
             disclaimer = "\n\n<p style='font-size: 0.8em; opacity: 0.7;'>Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only.</p>"
 
             try:
-                response = st.session_state.chat_engine.chat(prompt)
+                response_placeholder = st.empty()
+                full_response = ""
+
+                # Stream the response
+                for token in st.session_state.chat_engine.stream_chat(prompt).response_gen:
+                    full_response += token
+                    response_placeholder.markdown(full_response + "▌")
+                
+                # Display the final response
+                response_placeholder.markdown(full_response + disclaimer, unsafe_allow_html=True)
+
+                # Add response to message history
+                message = {"role": "assistant", "content": full_response + disclaimer, "avatar": f"{creatorchatavatar}"}
+                st.session_state.messages.append(message)
+
+                # Reset the chat engine
+                st.session_state.chat_engine.reset()
+
+                # Display additional information (scores, titles, etc.)
                 score_1 = response.source_nodes[0].score
                 score_2 = response.source_nodes[1].score
                 print("Score 1 is:", score_1)
@@ -588,12 +606,6 @@ if st.session_state.messages[-1]["role"] != "assistant":
                 else:
                     secondtitle = ""
 
-                st.session_state.chat_engine.reset()
-
-                st.markdown(response.response + disclaimer, unsafe_allow_html=True)
-                message = {"role": "assistant", "content": response.response + disclaimer, "avatar": f"{creatorchatavatar}"}
-                st.session_state.messages.append(message)  # Add response to message history
-
                 if score_1 >= 0.7 and score_2 >= 0.7:
                     st.divider()
                     st.header('''Live Answers - Related To Your Question 📖''')
@@ -613,4 +625,4 @@ if st.session_state.messages[-1]["role"] != "assistant":
                 error_message = "An error occurred while processing your request. Please try again."
                 st.markdown(error_message + disclaimer, unsafe_allow_html=True)
                 message = {"role": "assistant", "content": error_message + disclaimer, "avatar": f"{creatorchatavatar}"}
-                st.session_state.messages.append(message)  # Add error message to history
+                st.session_state.messages.append(message)
