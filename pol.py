@@ -569,12 +569,17 @@ if st.session_state.messages[-1]["role"] != "assistant":
             try:
                 response_placeholder = st.empty()
                 full_response = ""
+                source_nodes = []
 
                 # Stream the response
-                for token in st.session_state.chat_engine.stream_chat(prompt).response_gen:
+                stream_response = st.session_state.chat_engine.stream_chat(prompt)
+                for token in stream_response.response_gen:
                     full_response += token
                     response_placeholder.markdown(full_response + "▌")
                 
+                # Get the source nodes after streaming is complete
+                source_nodes = stream_response.source_nodes
+
                 # Display the final response
                 response_placeholder.markdown(full_response + disclaimer, unsafe_allow_html=True)
 
@@ -586,39 +591,37 @@ if st.session_state.messages[-1]["role"] != "assistant":
                 st.session_state.chat_engine.reset()
 
                 # Display additional information (scores, titles, etc.)
-                score_1 = response.source_nodes[0].score
-                score_2 = response.source_nodes[1].score
-                print("Score 1 is:", score_1)
-                print("Score 2 is:", score_2)
-                sourcetext1 = response.source_nodes[0].text
-                sourcetext2 = response.source_nodes[1].text
+                if len(source_nodes) >= 2:
+                    score_1 = source_nodes[0].score
+                    score_2 = source_nodes[1].score
+                    print("Score 1 is:", score_1)
+                    print("Score 2 is:", score_2)
+                    sourcetext1 = source_nodes[0].text
+                    sourcetext2 = source_nodes[1].text
 
-                if 'page' in response.source_nodes[0].metadata:
-                    firsttitle = f"{name}'s Book - Page {response.source_nodes[0].metadata['page']}"
-                else:
-                    firsttitle = generate_title(prompt, sourcetext1)
+                    if 'page' in source_nodes[0].metadata:
+                        firsttitle = f"{name}'s Book - Page {source_nodes[0].metadata['page']}"
+                    else:
+                        firsttitle = generate_title(prompt, sourcetext1)
 
-                if len(response.source_nodes) > 1:
-                    if 'page' in response.source_nodes[1].metadata:
-                        secondtitle = f"{name}'s Book - Page {response.source_nodes[1].metadata['page']}"
+                    if 'page' in source_nodes[1].metadata:
+                        secondtitle = f"{name}'s Book - Page {source_nodes[1].metadata['page']}"
                     else:
                         secondtitle = generate_title(prompt, sourcetext2)
-                else:
-                    secondtitle = ""
 
-                if score_1 >= 0.7 and score_2 >= 0.7:
-                    st.divider()
-                    st.header('''Live Answers - Related To Your Question 📖''')
-                    st.markdown('', unsafe_allow_html=True)
+                    if score_1 >= 0.7 and score_2 >= 0.7:
+                        st.divider()
+                        st.header('Live Answers - Related To Your Question 📖')
+                        st.markdown('', unsafe_allow_html=True)
 
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        with st.container(border=True):
-                            st.link_button(f"{firsttitle.strip('"')}", f'{response.source_nodes[0].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            with st.container(border=True):
+                                st.link_button(f"{firsttitle.strip('"')}", f'{source_nodes[0].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
 
-                    with col2:
-                        with st.container(border=True):
-                            st.link_button(f"{secondtitle.strip('"')}", f'{response.source_nodes[1].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
+                        with col2:
+                            with st.container(border=True):
+                                st.link_button(f"{secondtitle.strip('"')}", f'{source_nodes[1].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
 
             except Exception as e:
                 st.error(f"Failed to generate answer due to: {str(e)}")
