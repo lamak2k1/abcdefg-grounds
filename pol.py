@@ -40,6 +40,8 @@ st.set_page_config(page_title="AI Mentor", page_icon="💬", layout="centered", 
 mentor = st.query_params.get("name", "").upper()
 
 # Import the variables
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 name = os.getenv(f'{mentor}_NAME')
 topics = os.getenv(f'{mentor}_TOPICS')
 creatorimg = os.getenv(f'{mentor}_CREATORIMG')
@@ -131,7 +133,7 @@ class CustomRetriever(BaseRetriever):
         return sorted_nodes
 
 def generate_title(prompt, sourcetext):
-    client = OpenAI(api_key="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")
+    client = OpenAI(api_key=OPENAI_API_KEY)
 
     constructed_prompt = f"""
     Can you give me a title for this text: "{sourcetext}" in 4-5 words? The text is the source that is being referred to, to answer this question: "{prompt}", so make sure that the title suits the intention of the question and also the text that is being referred to?
