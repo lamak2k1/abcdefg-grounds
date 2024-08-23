@@ -563,69 +563,71 @@ for message in st.session_state.messages:  # Display the prior chat messages
 # If last message is not from assistant, generate a new response
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant", avatar=f"{creatorchatavatar}"):
-        with st.spinner("Thinking..."):
-            disclaimer = "\n\n<p style='font-size: 0.8em; opacity: 0.7;'>Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only.</p>"
+        disclaimer = "\n\n<p style='font-size: 0.8em; opacity: 0.7;'>Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only.</p>"
 
-            try:
-                response_placeholder = st.empty()
-                full_response = ""
-                source_nodes = []
+        try:
+            response_placeholder = st.empty()
+            full_response = ""
+            source_nodes = []
 
-                # Stream the response
+            # Use the spinner only for the initial setup
+            with st.spinner("Preparing response..."):
                 stream_response = st.session_state.chat_engine.stream_chat(prompt)
-                for token in stream_response.response_gen:
-                    full_response += token
-                    response_placeholder.markdown(full_response + "▌")
-                
-                # Get the source nodes after streaming is complete
-                source_nodes = stream_response.source_nodes
 
-                # Display the final response
-                response_placeholder.markdown(full_response + disclaimer, unsafe_allow_html=True)
+            # Stream the response without the spinner
+            for token in stream_response.response_gen:
+                full_response += token
+                response_placeholder.markdown(full_response + "▌")
+            
+            # Get the source nodes after streaming is complete
+            source_nodes = stream_response.source_nodes
 
-                # Add response to message history
-                message = {"role": "assistant", "content": full_response + disclaimer, "avatar": f"{creatorchatavatar}"}
-                st.session_state.messages.append(message)
+            # Display the final response
+            response_placeholder.markdown(full_response + disclaimer, unsafe_allow_html=True)
 
-                # Reset the chat engine
-                st.session_state.chat_engine.reset()
+            # Add response to message history
+            message = {"role": "assistant", "content": full_response + disclaimer, "avatar": f"{creatorchatavatar}"}
+            st.session_state.messages.append(message)
 
-                # Display additional information (scores, titles, etc.)
-                if len(source_nodes) >= 2:
-                    score_1 = source_nodes[0].score
-                    score_2 = source_nodes[1].score
-                    print("Score 1 is:", score_1)
-                    print("Score 2 is:", score_2)
-                    sourcetext1 = source_nodes[0].text
-                    sourcetext2 = source_nodes[1].text
+            # Reset the chat engine
+            st.session_state.chat_engine.reset()
 
-                    if 'page' in source_nodes[0].metadata:
-                        firsttitle = f"{name}'s Book - Page {source_nodes[0].metadata['page']}"
-                    else:
-                        firsttitle = generate_title(prompt, sourcetext1)
+            # Display additional information (scores, titles, etc.)
+            if len(source_nodes) >= 2:
+                score_1 = source_nodes[0].score
+                score_2 = source_nodes[1].score
+                print("Score 1 is:", score_1)
+                print("Score 2 is:", score_2)
+                sourcetext1 = source_nodes[0].text
+                sourcetext2 = source_nodes[1].text
 
-                    if 'page' in source_nodes[1].metadata:
-                        secondtitle = f"{name}'s Book - Page {source_nodes[1].metadata['page']}"
-                    else:
-                        secondtitle = generate_title(prompt, sourcetext2)
+                if 'page' in source_nodes[0].metadata:
+                    firsttitle = f"{name}'s Book - Page {source_nodes[0].metadata['page']}"
+                else:
+                    firsttitle = generate_title(prompt, sourcetext1)
 
-                    if score_1 >= 0.7 and score_2 >= 0.7:
-                        st.divider()
-                        st.header('Live Answers - Related To Your Question 📖')
-                        st.markdown('', unsafe_allow_html=True)
+                if 'page' in source_nodes[1].metadata:
+                    secondtitle = f"{name}'s Book - Page {source_nodes[1].metadata['page']}"
+                else:
+                    secondtitle = generate_title(prompt, sourcetext2)
 
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            with st.container(border=True):
-                                st.link_button(f"{firsttitle.strip('"')}", f'{source_nodes[0].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
+                if score_1 >= 0.7 and score_2 >= 0.7:
+                    st.divider()
+                    st.header('Live Answers - Related To Your Question 📖')
+                    st.markdown('', unsafe_allow_html=True)
 
-                        with col2:
-                            with st.container(border=True):
-                                st.link_button(f"{secondtitle.strip('"')}", f'{source_nodes[1].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        with st.container(border=True):
+                            st.link_button(f"{firsttitle.strip('"')}", f'{source_nodes[0].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
 
-            except Exception as e:
-                st.error(f"Failed to generate answer due to: {str(e)}")
-                error_message = "An error occurred while processing your request. Please try again."
-                st.markdown(error_message + disclaimer, unsafe_allow_html=True)
-                message = {"role": "assistant", "content": error_message + disclaimer, "avatar": f"{creatorchatavatar}"}
-                st.session_state.messages.append(message)
+                    with col2:
+                        with st.container(border=True):
+                            st.link_button(f"{secondtitle.strip('"')}", f'{source_nodes[1].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Failed to generate answer due to: {str(e)}")
+            error_message = "An error occurred while processing your request. Please try again."
+            st.markdown(error_message + disclaimer, unsafe_allow_html=True)
+            message = {"role": "assistant", "content": error_message + disclaimer, "avatar": f"{creatorchatavatar}"}
+            st.session_state.messages.append(message)
