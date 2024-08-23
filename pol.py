@@ -562,6 +562,8 @@ for message in st.session_state.messages:  # Display the prior chat messages
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant", avatar=f"{creatorchatavatar}"):
         with st.spinner("Thinking..."):
+            disclaimer = "\n\n<p style='font-size: 0.8em; opacity: 0.7;'>Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only.</p>"
+
             try:
                 response = st.session_state.chat_engine.chat(prompt)
                 score_1 = response.source_nodes[0].score
@@ -571,76 +573,42 @@ if st.session_state.messages[-1]["role"] != "assistant":
                 sourcetext1 = response.source_nodes[0].text
                 sourcetext2 = response.source_nodes[1].text
 
-                firsttitle = generate_title(prompt, sourcetext1)
-                print(firsttitle)
-                secondtitle = generate_title(prompt, sourcetext2)
-                print(secondtitle)
+                if 'page' in response.source_nodes[0].metadata:
+                    firsttitle = f"{name}'s Book - Page {response.source_nodes[0].metadata['page']}"
+                else:
+                    firsttitle = generate_title(prompt, sourcetext1)
+
+                if len(response.source_nodes) > 1:
+                    if 'page' in response.source_nodes[1].metadata:
+                        secondtitle = f"{name}'s Book - Page {response.source_nodes[1].metadata['page']}"
+                    else:
+                        secondtitle = generate_title(prompt, sourcetext2)
+                else:
+                    secondtitle = ""
 
                 st.session_state.chat_engine.reset()
 
-                if (response.source_nodes[0].score < 0.7) and (response.source_nodes[1].score < 0.7):
-                    print("SCORES<0.7 - Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.")
-                    st.markdown("Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.", unsafe_allow_html=True)
-                    message = {"role": "assistant", "content": "SCORES<0.7, Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.", "avatar": f"{creatorchatavatar}"}
-                    st.session_state.messages.append(message)  # Add response to message history
+                st.markdown(response.response + disclaimer, unsafe_allow_html=True)
+                message = {"role": "assistant", "content": response.response + disclaimer, "avatar": f"{creatorchatavatar}"}
+                st.session_state.messages.append(message)  # Add response to message history
+
+                if score_1 >= 0.7 and score_2 >= 0.7:
                     st.divider()
+                    st.header('''Live Answers - Related To Your Question 📖''')
+                    st.markdown('', unsafe_allow_html=True)
 
-                else:
-                    try:
-                        sourcetext1 = response.source_nodes[0].text
-                        sourcetext2 = response.source_nodes[1].text
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        with st.container(border=True):
+                            st.link_button(f"{firsttitle.strip('"')}", f'{response.source_nodes[0].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
 
-                        firsttitle = generate_title(prompt, sourcetext1)
-                        firsttitle = firsttitle.strip('"')
-                        print(firsttitle)
-                        secondtitle = generate_title(prompt, sourcetext2)
-                        secondtitle = secondtitle.strip('"')
-                        print(secondtitle)
-
-                        print(f"Response 1 is {response.source_nodes[0]}")
-                        print(f"Response 2 is {response.source_nodes[1]}")
-
-                        print(response)
-
-                        p_id_1 = response.source_nodes[0].metadata['page_id']
-                        print("Page ID 1 is:", p_id_1)
-                        p_id_2 = response.source_nodes[1].metadata['page_id']
-                        print("Page ID 2 is:", p_id_2)
-
-                        st.markdown(response.response, unsafe_allow_html=True)
-                        message = {"role": "assistant", "content": response.response, "avatar": f"{creatorchatavatar}"}
-                        st.session_state.messages.append(message)  # Add response to message history
-                        st.divider()
-                        st.header('''Live Answers - Related To Your Question 📖''')
-                        st.markdown('', unsafe_allow_html=True)
-
-                        if (0):
-                            with st.container(border=True):
-                                st.image(cover_url_1)
-                                st.link_button(f'{name_1}', f'https://karlkaufman.unicult.club/all-chapters/chapters/{doc_to_link[dict_to_doc[p_id_1]]}', help='Go to lesson', use_container_width=True)
-
-                        else:
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                with st.container(border=True):
-                                    st.link_button(f"{firsttitle}", f'{p_id_1}', help='Go to lesson', use_container_width=True)
-
-                            with col2:
-                                with st.container(border=True):
-                                    st.link_button(f"{secondtitle}", f'{p_id_2}', help='Go to lesson', use_container_width=True)
-
-                    except Exception as e:
-                        st.error(f"Failed to generate answer due to: {str(e)}")
-                        print("Blah, Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.")
-                        st.markdown("Blah, Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.", unsafe_allow_html=True)
-                        message = {"role": "assistant", "content": "Blah, Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.", "avatar": f"{creatorchatavatar}"}
-                        st.session_state.messages.append(message)  # Add response to message history
-                        st.divider()
+                    with col2:
+                        with st.container(border=True):
+                            st.link_button(f"{secondtitle.strip('"')}", f'{response.source_nodes[1].metadata["page_id"]}', help='Go to lesson', use_container_width=True)
 
             except Exception as e:
                 st.error(f"Failed to generate answer due to: {str(e)}")
-                print("Booh, Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.")
-                st.markdown("Booh, Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.", unsafe_allow_html=True)
-                message = {"role": "assistant", "content": "Booh,Sorry, I cannot answer that. Can you please ask questions with respect to learning from something I know? In case you already are, please ask again by being more specific and detailed. Thanks.", "avatar": f"{creatorchatavatar}"}
-                st.session_state.messages.append(message)  # Add response to message history
-                st.divider()
+                error_message = "An error occurred while processing your request. Please try again."
+                st.markdown(error_message + disclaimer, unsafe_allow_html=True)
+                message = {"role": "assistant", "content": error_message + disclaimer, "avatar": f"{creatorchatavatar}"}
+                st.session_state.messages.append(message)  # Add error message to history
