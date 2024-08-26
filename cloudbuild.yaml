@@ -1,7 +1,9 @@
-options:
-  logging: CLOUD_LOGGING_ONLY
-
 steps:
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  args: ['gcloud', 'app', 'deploy']
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud config set app/cloud_build_timeout 1600 && \
+    gcloud app deploy --verbosity=debug --stop-previous-version
 timeout: '1600s'
