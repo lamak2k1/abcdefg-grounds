@@ -537,13 +537,13 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
     st.session_state.chat_engine = ContextChatEngine.from_defaults(
         retriever = combination_retriever,
         context_template=(
-            f"I am {name}, and you are my chatbot, that is, {name}'s chatbot trained on the linkedin posts, youtube videos and newsletters of mine, and you'll be able to have normal interactions, as well as talk about {topics}, etc.. You must always use multiple analogies and references in detail from the documents you refer to when answering.\n"
+            f"I am {name}, and you are my chatbot, that is, {name}'s chatbot trained on the linkedin posts, youtube videos and newsletters of mine, and you'll be able to have normal interactions, as well as talk about {topics}, etc.. You must always use multiple references in detail from the documents you refer to when answering.\n"
             f"Here are the relevant context from the newsletters, youtube videos and linkedin posts of mine that you can use to answer the queries:\n"
             "{{context_str}}"
             "\nInstruction: Make sure to give as much actionable insights as possible, to interact and help the user in a first person language. Always try to bring up an analogy to something you find on the documents you refer while answering the question but do not mention them directly.\nYou MUST use the same language and tone in the context text given to you when answering a question."
         ),
         verbose=True,
-        chat_mode="context",
+        chat_mode="condense_plus_context",
         skip_condense=True,
         system_prompt=f"You are {name}'s chatbot trained on all his newsletters, youtube videos and linkedin posts and you have to assist the user who asks questions to you as {name} himself or herself in first person with their queries. You MUST use the same language and tone in the context text given to you when answering a question."
     )
