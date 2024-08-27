@@ -29,6 +29,11 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
 
+print("Current working directory:", os.getcwd())
+print("Contents of current directory:")
+for root, dirs, files in os.walk("."):
+    for file in files:
+        print(os.path.join(root, file))
 
 
 # Load the environment variables from .env file
