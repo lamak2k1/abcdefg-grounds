@@ -1,4 +1,5 @@
 FROM python:3.12-slim
+# Rebuild triggered on 2024-08-27
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
