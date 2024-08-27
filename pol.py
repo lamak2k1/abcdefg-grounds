@@ -400,7 +400,7 @@ st.markdown(
 )
 
 def check_password():
-    """Returns `True` if the user had the correct password."""
+    """Returns `True` if the user had the correct password or if no password is required."""
     
     # Get the mentor name from query parameters
     mentor = st.query_params.get("name", "").lower()
@@ -409,16 +409,17 @@ def check_password():
         st.error("No mentor specified in the URL. Please use '?name=mentorname' in the URL.")
         return False
 
+    # Check if the mentor has a password in secrets
+    if mentor not in st.secrets or "password" not in st.secrets[mentor]:
+        # No password required for this mentor
+        return True
+
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if mentor in st.secrets and "password" in st.secrets[mentor]:
-            if hmac.compare_digest(st.session_state["password"], st.secrets[mentor]["password"]):
-                st.session_state["password_correct"] = True
-                del st.session_state["password"]  # Don't store the password.
-            else:
-                st.session_state["password_correct"] = False
+        if hmac.compare_digest(st.session_state["password"], st.secrets[mentor]["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
         else:
-            st.error(f"No password configuration found for mentor: {mentor}")
             st.session_state["password_correct"] = False
 
     # Return True if the password is validated.
@@ -427,7 +428,7 @@ def check_password():
 
     # Show input for password.
     st.text_input(
-        f"Enter password", type="password", on_change=password_entered, key="password"
+        f"Enter password for {mentor}", type="password", on_change=password_entered, key="password"
     )
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
