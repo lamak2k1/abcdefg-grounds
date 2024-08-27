@@ -451,8 +451,7 @@ def load_sentence_index(folders):
     # Your code to load or compute the sentence index goes here
     indices = []
     for ns in folders:
-        base_dir = "/app"  # or os.getcwd() if it's different
-        storage_context = StorageContext.from_defaults(persist_dir=os.path.join(base_dir, "indices", "".join(name.split()), ns))
+        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{"".join(name.split())}/{ns}")
         sentence_index = load_index_from_storage(storage_context)
         indices.append(sentence_index)
         
