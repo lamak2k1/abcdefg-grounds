@@ -571,7 +571,7 @@ if st.session_state.messages[-1]["role"] != "assistant":
             source_nodes = []
 
             # Use the spinner only for the initial setup
-            with st.spinner("Preparing response..."):
+            with st.spinner("Thinking..."):
                 stream_response = st.session_state.chat_engine.stream_chat(prompt)
 
             # Stream the response without the spinner
