@@ -29,11 +29,6 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
 
-print("Current working directory:", os.getcwd())
-print("Contents of current directory:")
-for root, dirs, files in os.walk("."):
-    for file in files:
-        print(os.path.join(root, file))
 
 
 # Load the environment variables from .env file
@@ -456,8 +451,7 @@ def load_sentence_index(folders):
     # Your code to load or compute the sentence index goes here
     indices = []
     for ns in folders:
-        base_dir = "/app"  # or os.getcwd() if it's different
-        storage_context = StorageContext.from_defaults(persist_dir=os.path.join(base_dir, "indices", "".join(name.split()), ns))
+        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{"".join(name.split())}/{ns}")
         sentence_index = load_index_from_storage(storage_context)
         indices.append(sentence_index)
         
@@ -543,13 +537,14 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
     st.session_state.chat_engine = ContextChatEngine.from_defaults(
         retriever = combination_retriever,
         context_template=(
-            f"I am {name}, and you are my chatbot, that is, {name}'s chatbot trained on the linkedin posts, youtube videos and newsletters of mine, and you'll be able to have normal interactions, as well as talk about {topics}, etc.. You must always use multiple references in detail from the documents you refer to when answering.\n"
+            f"I am {name}, and you are my chatbot, that is, {name}'s chatbot trained on the linkedin posts, youtube videos and newsletters of mine, and you'll be able to have normal interactions, as well as talk about {topics}, etc.. You must always use multiple analogies and references in detail from the documents you refer to when answering.\n"
             f"Here are the relevant context from the newsletters, youtube videos and linkedin posts of mine that you can use to answer the queries:\n"
             "{{context_str}}"
-            "\nInstruction: Make sure to give as much actionable insights as possible, to interact and help the user in a first person language. Always try to bring up an analogy to something you find on the documents you refer while answering the question but do not mention them directly.\nYou MUST use the same language and tone in the context text given to you when answering a question. You can also use the previous chat history, or the context above, to interact and help the user."
+            "\nInstruction: Make sure to give as much actionable insights as possible, to interact and help the user in a first person language. Always try to bring up an analogy to something you find on the documents you refer while answering the question but do not mention them directly.\nYou MUST use the same language and tone in the context text given to you when answering a question."
         ),
         verbose=True,
-        chat_mode="condense_plus_context",
+        chat_mode="context",
+        skip_condense=True,
         system_prompt=f"You are {name}'s chatbot trained on all his newsletters, youtube videos and linkedin posts and you have to assist the user who asks questions to you as {name} himself or herself in first person with their queries. You MUST use the same language and tone in the context text given to you when answering a question."
     )
 
@@ -576,7 +571,7 @@ if st.session_state.messages[-1]["role"] != "assistant":
             source_nodes = []
 
             # Use the spinner only for the initial setup
-            with st.spinner("Thinking..."):
+            with st.spinner("Preparing response..."):
                 stream_response = st.session_state.chat_engine.stream_chat(prompt)
 
             # Stream the response without the spinner
