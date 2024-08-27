@@ -24,6 +24,8 @@ steps:
   - '--platform'
   - 'managed'
   - '--allow-unauthenticated'
+  - '--service-account'
+  - '629574753661-compute@developer.gserviceaccount.com'
   - '--set-secrets'
   - 'STREAMLIT_SECRETS=streamlit_secrets:latest'
 
