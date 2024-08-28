@@ -77,7 +77,7 @@ indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
 try:
     # Use Path objects for more robust path handling
-    mentor_dir = indices_dir / "".join(name.split())
+    mentor_dir = os.path.join(indices_dir, "".join(name.split()))
 
     folders = [
         item.name for item in mentor_dir.iterdir() if item.is_dir()
@@ -447,15 +447,16 @@ def load_model():
 
 Settings.embed_model = load_model()
 
-@st.cache_resource  # Cache the function output to avoid recomputation
+@st.cache_resource
 def load_sentence_index(folders):
-    # Your code to load or compute the sentence index goes here
     indices = []
     for ns in folders:
-        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{"".join(name.split())}/{ns}")
-        sentence_index = load_index_from_storage(storage_context)
-        indices.append(sentence_index)
-        
+        try:
+            storage_context = StorageContext.from_defaults(persist_dir=os.path.join("indices", "".join(name.split()), ns))
+            sentence_index = load_index_from_storage(storage_context)
+            indices.append(sentence_index)
+        except Exception as e:
+            logger.error(f"Error loading index for {ns}: {str(e)}")
     return indices
 
 all_retrievers = []
