@@ -449,32 +449,38 @@ def load_model():
 
 Settings.embed_model = load_model()
 
+import ijson
+
 @st.cache_resource
 def load_sentence_index(folders):
     indices = []
     for ns in folders:
         try:
-            # Construct the path
-            path = Path(os.path.join("indices", "".join(name.split()), ns))
+            path = Path('/app/indices', "".join(name.split()), ns).resolve()
+            st.write(f"Attempting to load index from absolute path: {path}")
             
-            # Print the path
-            st.write(f"Attempting to load index from path: {path}")
-            
-            # Check if the path exists
             if not path.exists():
                 st.write(f"Path does not exist: {path}")
             else:
-                # List contents of the directory
                 st.write(f"Contents of {path}:")
                 for item in path.iterdir():
                     st.write(f"- {item}")
+                    if item.is_file() and item.suffix == '.json':
+                        with open(item, 'rb') as f:
+                            parser = ijson.parse(f)
+                            for prefix, event, value in parser:
+                                if prefix == '':
+                                    st.write(f"First item in {item.name}: {value}")
+                                    break
             
-            storage_context = StorageContext.from_defaults(persist_dir=path)
+            storage_context = StorageContext.from_defaults(persist_dir=str(path))
             sentence_index = load_index_from_storage(storage_context)
             indices.append(sentence_index)
             
         except Exception as e:
             st.write(f"Error loading index for {ns}: {str(e)}")
+            st.write(f"Exception type: {type(e)}")
+            st.write(f"Exception args: {e.args}")
     return indices
 
 all_retrievers = []
