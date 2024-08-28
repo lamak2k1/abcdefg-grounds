@@ -463,7 +463,11 @@ def load_sentence_index(folders):
 all_retrievers = []
 
 if folders:
-    sentence_index = load_sentence_index(folders)
+    try:
+        sentence_index = load_sentence_index(folders)
+     except Exception as e:
+            st.write(f"Error loading sentence_index: {str(e)}")
+    st.write(f'sentence index {sentence_index}')
     all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index]
 
 combination_retriever = CustomRetriever(all_retrievers, top_n=4)
