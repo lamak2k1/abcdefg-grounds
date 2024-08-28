@@ -148,6 +148,7 @@ def generate_title(prompt, sourcetext):
             ]
         )
         return response.choices[0].message.content
+
     except Exception as e:
         # Log the exception details
         print(f"Failed to generate title due to: {str(e)}")
@@ -456,6 +457,7 @@ def load_sentence_index(folders):
             storage_context = StorageContext.from_defaults(persist_dir=Path(os.path.join("indices", "".join(name.split()), ns)))
             sentence_index = load_index_from_storage(storage_context)
             indices.append(sentence_index)
+            
         except Exception as e:
             st.write(f"Error loading index for {ns}: {str(e)}")
     return indices
@@ -465,7 +467,7 @@ all_retrievers = []
 if folders:
     try:
         sentence_index = load_sentence_index(folders)
-     except Exception as e:
+    except Exception as e:
             st.write(f"Error loading sentence_index: {str(e)}")
     st.write(f'sentence index {sentence_index}')
     all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index]
