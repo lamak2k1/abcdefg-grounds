@@ -6,4 +6,5 @@ COPY . .
 RUN mkdir -p /app/.streamlit
 RUN mkdir -p /app/indices
 RUN chmod -R 755 /app
+RUN chmod -R 644 /app/indices  # Ensure all files are readable
 CMD echo "$STREAMLIT_SECRETS" > /app/.streamlit/secrets.toml && streamlit run pol.py --server.port=$PORT --server.address=0.0.0.0
