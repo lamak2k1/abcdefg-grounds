@@ -457,7 +457,7 @@ def load_sentence_index(folders):
             sentence_index = load_index_from_storage(storage_context)
             indices.append(sentence_index)
         except Exception as e:
-            logger.error(f"Error loading index for {ns}: {str(e)}")
+            st.write(f"Error loading index for {ns}: {str(e)}")
     return indices
 
 all_retrievers = []
