@@ -454,7 +454,22 @@ def load_sentence_index(folders):
     indices = []
     for ns in folders:
         try:
-            storage_context = StorageContext.from_defaults(persist_dir=Path(os.path.join("indices", "".join(name.split()), ns)))
+            # Construct the path
+            path = Path(os.path.join("indices", "".join(name.split()), ns))
+            
+            # Print the path
+            st.write(f"Attempting to load index from path: {path}")
+            
+            # Check if the path exists
+            if not path.exists():
+                st.write(f"Path does not exist: {path}")
+            else:
+                # List contents of the directory
+                st.write(f"Contents of {path}:")
+                for item in path.iterdir():
+                    st.write(f"- {item}")
+            
+            storage_context = StorageContext.from_defaults(persist_dir=path)
             sentence_index = load_index_from_storage(storage_context)
             indices.append(sentence_index)
             
