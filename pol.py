@@ -89,8 +89,7 @@ try:
     st.write(f"Found folders: {folders}")
 
 except Exception as e:
-    #st.write(f"Error processing mentor directory: {str(e)}")
-    print(str(e))
+    st.write(f"Error processing mentor directory: {str(e)}")
 
 
 class CustomRetriever(BaseRetriever):
