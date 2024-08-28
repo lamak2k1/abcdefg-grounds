@@ -453,7 +453,7 @@ def load_sentence_index(folders):
     indices = []
     for ns in folders:
         try:
-            storage_context = StorageContext.from_defaults(persist_dir=os.path.join("indices", "".join(name.split()), ns))
+            storage_context = StorageContext.from_defaults(persist_dir=Path(os.path.join("indices", "".join(name.split()), ns)))
             sentence_index = load_index_from_storage(storage_context)
             indices.append(sentence_index)
         except Exception as e:
