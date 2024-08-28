@@ -77,7 +77,7 @@ indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
 try:
     # Use Path objects for more robust path handling
-    mentor_dir = os.path.join(indices_dir, "".join(name.split()))
+    mentor_dir = Path(os.path.join(indices_dir, "".join(name.split())))
 
     st.write(f"Mentor Dir: {mentor_dir}")
     
