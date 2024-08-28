@@ -77,19 +77,18 @@ indices_dir = root_dir / "indices"  # Path to the 'indices' folder
 
 try:
     # Use Path objects for more robust path handling
-    mentor_dir = Path(os.path.join(indices_dir, "".join(name.split())))
+    mentor_dir = indices_dir / "".join(name.split())
 
-    st.write(f"Mentor Dir: {mentor_dir}")
-    
     folders = [
         item.name for item in mentor_dir.iterdir() if item.is_dir()
     ]
 
     # Debug print
-    st.write(f"Found folders: {folders}")
+    #st.write(f"Found folders: {folders}")
 
 except Exception as e:
-    st.write(f"Error processing mentor directory: {str(e)}")
+    #st.write(f"Error processing mentor directory: {str(e)}")
+    print(str(e))
 
 
 class CustomRetriever(BaseRetriever):
@@ -148,7 +147,6 @@ def generate_title(prompt, sourcetext):
             ]
         )
         return response.choices[0].message.content
-
     except Exception as e:
         # Log the exception details
         print(f"Failed to generate title due to: {str(e)}")
@@ -430,7 +428,7 @@ def check_password():
 
     # Show input for password.
     st.text_input(
-        f"Enter password", type="password", on_change=password_entered, key="password"
+        f"Enter password for {mentor}", type="password", on_change=password_entered, key="password"
     )
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
@@ -449,56 +447,21 @@ def load_model():
 
 Settings.embed_model = load_model()
 
-
-import json
-
-@st.cache_resource
+@st.cache_resource  # Cache the function output to avoid recomputation
 def load_sentence_index(folders):
+    # Your code to load or compute the sentence index goes here
     indices = []
     for ns in folders:
-        try:
-            # Construct the absolute path
-            path = Path('/app/indices', "".join(name.split()), ns).resolve()
-            
-            st.write(f"Attempting to load index from absolute path: {path}")
-            
-            if not path.exists():
-                st.write(f"Path does not exist: {path}")
-            else:
-                st.write(f"Contents of {path}:")
-                for item in path.iterdir():
-                    st.write(f"- {item}")
-                    if item.is_file() and item.suffix == '.json':
-                        with open(item, 'r') as f:
-                            chunk = f.read(1000)  # Read first 1000 characters
-                            st.write(f"First 1000 characters of {item.name}:")
-                            st.write(chunk)
-                            
-                            # Try to parse the chunk as JSON
-                            try:
-                                json.loads(chunk)
-                                st.write(f"{item.name} appears to be valid JSON.")
-                            except json.JSONDecodeError as json_err:
-                                st.write(f"Error parsing {item.name}: {str(json_err)}")
-            
-            storage_context = StorageContext.from_defaults(persist_dir=path)
-            sentence_index = load_index_from_storage(storage_context)
-            indices.append(sentence_index)
-            
-        except Exception as e:
-            st.write(f"Error loading index for {ns}: {str(e)}")
-            st.write(f"Exception type: {type(e)}")
-            st.write(f"Exception args: {e.args}")
+        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{"".join(name.split())}/{ns}")
+        sentence_index = load_index_from_storage(storage_context)
+        indices.append(sentence_index)
+        
     return indices
-    
+
 all_retrievers = []
 
 if folders:
-    try:
-        sentence_index = load_sentence_index(folders)
-    except Exception as e:
-            st.write(f"Error loading sentence_index: {str(e)}")
-    st.write(f'sentence index {sentence_index}')
+    sentence_index = load_sentence_index(folders)
     all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index]
 
 combination_retriever = CustomRetriever(all_retrievers, top_n=4)
