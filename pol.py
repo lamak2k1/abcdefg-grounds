@@ -79,12 +79,14 @@ try:
     # Use Path objects for more robust path handling
     mentor_dir = os.path.join(indices_dir, "".join(name.split()))
 
+    st.write(f"Mentor Dir: {mentor_dir}")
+    
     folders = [
         item.name for item in mentor_dir.iterdir() if item.is_dir()
     ]
 
     # Debug print
-    #st.write(f"Found folders: {folders}")
+    st.write(f"Found folders: {folders}")
 
 except Exception as e:
     #st.write(f"Error processing mentor directory: {str(e)}")
