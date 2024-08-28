@@ -481,7 +481,7 @@ def load_sentence_index(folders):
                             except json.JSONDecodeError as json_err:
                                 st.write(f"Error parsing {item.name}: {str(json_err)}")
             
-            storage_context = StorageContext.from_defaults(persist_dir=str(path))
+            storage_context = StorageContext.from_defaults(persist_dir=path)
             sentence_index = load_index_from_storage(storage_context)
             indices.append(sentence_index)
             
