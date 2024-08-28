@@ -431,7 +431,7 @@ def check_password():
 
     # Show input for password.
     st.text_input(
-        f"Enter password for {mentor}", type="password", on_change=password_entered, key="password"
+        f"Enter password", type="password", on_change=password_entered, key="password"
     )
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
