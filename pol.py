@@ -409,14 +409,17 @@ def check_password():
         st.error("No mentor specified in the URL. Please use '?name=mentorname' in the URL.")
         return False
 
-    # Check if the mentor has a password in secrets
-    if mentor not in st.secrets or "password" not in st.secrets[mentor]:
+    # Check if the mentor has a password in environment variables
+    password_key = f"STREAMLIT_{mentor.upper()}_PASSWORD"
+    mentor_password = os.environ.get(password_key)
+
+    if not mentor_password:
         # No password required for this mentor
         return True
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if hmac.compare_digest(st.session_state["password"], st.secrets[mentor]["password"]):
+        if hmac.compare_digest(st.session_state["password"], mentor_password):
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # Don't store the password.
         else:
