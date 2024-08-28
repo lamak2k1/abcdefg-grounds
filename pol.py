@@ -620,11 +620,11 @@ if st.session_state.messages[-1]["role"] != "assistant":
                     col1, col2 = st.columns(2)
                     with col1:
                         with st.container(border=True):
-                            st.link_button(f'{firsttitle.strip('"')}', f"{source_nodes[0].metadata['page_id']}", help='Go to lesson', use_container_width=True)
+                            st.link_button(repr(firsttitle.strip('"')), repr(source_nodes[0].metadata['page_id']), help='Go to lesson', use_container_width=True)
 
                     with col2:
                         with st.container(border=True):
-                            st.link_button(f'{secondtitle.strip('"')}', f"{source_nodes[1].metadata['page_id']}", help='Go to lesson', use_container_width=True)
+                            st.link_button(repr(secondtitle.strip('"')), repr(source_nodes[1].metadata['page_id']), help='Go to lesson', use_container_width=True)
 
         except Exception as e:
             st.error(f"Failed to generate answer due to: {str(e)}")
