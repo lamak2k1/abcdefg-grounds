@@ -449,14 +449,17 @@ def load_model():
 
 Settings.embed_model = load_model()
 
-import ijson
+
+import json
 
 @st.cache_resource
 def load_sentence_index(folders):
     indices = []
     for ns in folders:
         try:
+            # Construct the absolute path
             path = Path('/app/indices', "".join(name.split()), ns).resolve()
+            
             st.write(f"Attempting to load index from absolute path: {path}")
             
             if not path.exists():
@@ -466,12 +469,17 @@ def load_sentence_index(folders):
                 for item in path.iterdir():
                     st.write(f"- {item}")
                     if item.is_file() and item.suffix == '.json':
-                        with open(item, 'rb') as f:
-                            parser = ijson.parse(f)
-                            for prefix, event, value in parser:
-                                if prefix == '':
-                                    st.write(f"First item in {item.name}: {value}")
-                                    break
+                        with open(item, 'r') as f:
+                            chunk = f.read(1000)  # Read first 1000 characters
+                            st.write(f"First 1000 characters of {item.name}:")
+                            st.write(chunk)
+                            
+                            # Try to parse the chunk as JSON
+                            try:
+                                json.loads(chunk)
+                                st.write(f"{item.name} appears to be valid JSON.")
+                            except json.JSONDecodeError as json_err:
+                                st.write(f"Error parsing {item.name}: {str(json_err)}")
             
             storage_context = StorageContext.from_defaults(persist_dir=str(path))
             sentence_index = load_index_from_storage(storage_context)
@@ -482,7 +490,7 @@ def load_sentence_index(folders):
             st.write(f"Exception type: {type(e)}")
             st.write(f"Exception args: {e.args}")
     return indices
-
+    
 all_retrievers = []
 
 if folders:
