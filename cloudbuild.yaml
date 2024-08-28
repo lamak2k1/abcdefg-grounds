@@ -27,7 +27,7 @@ steps:
   - '--service-account'
   - '629574753661-compute@developer.gserviceaccount.com'
   - '--set-secrets'
-  - 'STREAMLIT_SECRETS=streamlit_secrets:2'
+  - 'STREAMLIT_SECRETS=streamlit_user_credentials:2'
 
 images:
 - 'gcr.io/$PROJECT_ID/streamlit-app:$COMMIT_SHA'
