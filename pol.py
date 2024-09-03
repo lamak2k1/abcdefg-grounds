@@ -677,3 +677,5 @@ if st.session_state.messages[-1]["role"] != "assistant":
             st.markdown(error_message + disclaimer, unsafe_allow_html=True)
             message = {"role": "assistant", "content": error_message + disclaimer, "avatar": f"{creatorchatavatar}"}
             st.session_state.messages.append(message)
+
+list_all_sheets()
