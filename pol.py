@@ -28,16 +28,8 @@ from llama_index.core import QueryBundle
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
-import gspread
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from google.auth.transport.requests import Request
-from googleapiclient.errors import HttpError
-from datetime import datetime
-import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 # Load the environment variables from .env file
 load_dotenv()
@@ -164,7 +156,7 @@ result='null'
 
 Settings.llm = lOpenAI(api_key="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", model = "gpt-4o-mini", temperature=0)
 Settings.chunk_size = 256
-Settings.chunk_overlap = 30
+Settings.chunk_overlap = 10
 
 tabtitle = f"AI {name}"
 pageheader = f"{name}'s Digital Brain 💡"
@@ -427,12 +419,11 @@ def check_password():
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if "password" in st.session_state and st.session_state["password"]:
-            if hmac.compare_digest(st.session_state["password"], mentor_password):
-                st.session_state["password_correct"] = True
-                del st.session_state["password"]  # Don't store the password.
-            else:
-                st.session_state["password_correct"] = False
+        if hmac.compare_digest(st.session_state["password"], mentor_password):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
 
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
@@ -440,7 +431,7 @@ def check_password():
 
     # Show input for password.
     st.text_input(
-        "Enter password", type="password", on_change=password_entered, key="password"
+        f"Enter password", type="password", on_change=password_entered, key="password"
     )
     if "password_correct" in st.session_state:
         st.error("😕 Password incorrect")
@@ -461,41 +452,22 @@ Settings.embed_model = load_model()
 
 @st.cache_resource  # Cache the function output to avoid recomputation
 def load_sentence_index(folders):
+    # Your code to load or compute the sentence index goes here
     indices = []
     for ns in folders:
-        try:
-            persist_dir = f"indices/{(''.join(name.split()))}/{ns}"
-            logger.info(f"Attempting to load index from: {persist_dir}")
-            
-            if not os.path.exists(persist_dir):
-                logger.warning(f"Directory not found: {persist_dir}")
-                continue
-            
-            storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
-            sentence_index = load_index_from_storage(storage_context)
-            indices.append(sentence_index)
-            logger.info(f"Successfully loaded index from: {persist_dir}")
-        except Exception as e:
-            logger.error(f"Error loading index for {ns}: {str(e)}")
-    
-    logger.info(f"Total indices loaded: {len(indices)}")
+        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{(''.join(name.split()))}/{ns}")
+        sentence_index = load_index_from_storage(storage_context)
+        indices.append(sentence_index)
+        
     return indices
 
 all_retrievers = []
 
 if folders:
-    logger.info(f"Folders to process: {folders}")
     sentence_index = load_sentence_index(folders)
     all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index]
-    logger.info(f"Total retrievers created: {len(all_retrievers)}")
 
-if all_retrievers:
-    combination_retriever = CustomRetriever(all_retrievers, top_n=4)
-    logger.info("CustomRetriever created successfully")
-else:
-    logger.error("No valid retrievers found. Please check the index files.")
-    st.error("No valid retrievers found. Please check the index files.")
-    st.stop()
+combination_retriever = CustomRetriever(all_retrievers, top_n=4)
 
 # BAAI/bge-reranker-base
 # link: https://huggingface.co/BAAI/bge-reranker-base
@@ -580,81 +552,6 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
         system_prompt=f"You are {name}'s chatbot trained on all his newsletters, youtube videos and linkedin posts and you have to assist the user who asks questions to you as {name} himself or herself in first person with their queries. You MUST use the same language and tone in the context text given to you when answering a question."
     )
 
-# Set up Google Sheets API credentials
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-SERVICE_ACCOUNT_FILE = 'aimentors-8ac58aab995e.json'
-ADMIN_EMAIL = 'kamalprasats@unicult.club'
-
-def get_credentials():
-    creds = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    delegated_credentials = creds.with_subject(ADMIN_EMAIL)
-    return delegated_credentials
-
-def get_or_create_sheet(mentor_name):
-    creds = get_credentials()
-    client = gspread.authorize(creds)
-    drive_service = build('drive', 'v3', credentials=creds)
-    sheets_service = build('sheets', 'v4', credentials=creds)
-
-    try:
-        # Try to open an existing sheet
-        sheet = client.open(mentor_name).sheet1
-        print(f"Opened existing sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
-    except gspread.SpreadsheetNotFound:
-        # If the sheet doesn't exist, create a new one
-        spreadsheet = {
-            'properties': {
-                'title': mentor_name
-            }
-        }
-        spreadsheet = sheets_service.spreadsheets().create(body=spreadsheet).execute()
-        sheet_id = spreadsheet['spreadsheetId']
-        sheet = client.open_by_key(sheet_id).sheet1
-        
-        # Add headers to the new sheet
-        sheet.append_row(["Timestamp", "Question", "Answer"])
-        
-        print(f"Created new sheet: https://docs.google.com/spreadsheets/d/{sheet_id}")
-
-    # The sheet is already accessible to the admin email (kamalprasats@unicult.club)
-    # because we're using delegated credentials. No need to explicitly share.
-
-    return sheet
-
-def record_qa(mentor_name, question, answer):
-    try:
-        sheet = get_or_create_sheet(mentor_name)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sheet.append_row([timestamp, question, answer])
-        print(f"Successfully recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
-    except Exception as e:
-        print(f"Error recording Q&A: {str(e)}")
-
-def list_all_sheets():
-    creds = get_credentials()
-    drive_service = build('drive', 'v3', credentials=creds)
-    results = drive_service.files().list(
-        q="mimeType='application/vnd.google-apps.spreadsheet'",
-        fields="files(id, name)").execute()
-    spreadsheets = results.get('files', [])
-    
-    if not spreadsheets:
-        print('No spreadsheets found.')
-    else:
-        print('Spreadsheets:')
-        for spreadsheet in spreadsheets:
-            print(f"- {spreadsheet['name']} (ID: {spreadsheet['id']})")
-            
-            # Get sheets within each spreadsheet
-            sheets_service = build('sheets', 'v4', credentials=creds)
-            sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=spreadsheet['id']).execute()
-            sheets = sheet_metadata.get('sheets', '')
-            for sheet in sheets:
-                title = sheet.get("properties", {}).get("title", "Sheet1")
-                sheet_id = sheet.get("properties", {}).get("sheetId", 0)
-                print(f"  Sheet Title: {title}, Sheet ID: {sheet_id}")
-
 if prompt := st.chat_input("Your question..."):  # Prompt for user input and save to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     query = prompt
@@ -695,9 +592,6 @@ if st.session_state.messages[-1]["role"] != "assistant":
             # Add response to message history
             message = {"role": "assistant", "content": full_response + disclaimer, "avatar": f"{creatorchatavatar}"}
             st.session_state.messages.append(message)
-
-            # Record the question and answer in Google Sheets
-            record_qa(mentor, prompt, full_response)
 
             # Reset the chat engine
             st.session_state.chat_engine.reset()
