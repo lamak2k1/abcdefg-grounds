@@ -34,8 +34,10 @@ from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
 from datetime import datetime
+import logging
 
-
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load the environment variables from .env file
 load_dotenv()
@@ -459,22 +461,41 @@ Settings.embed_model = load_model()
 
 @st.cache_resource  # Cache the function output to avoid recomputation
 def load_sentence_index(folders):
-    # Your code to load or compute the sentence index goes here
     indices = []
     for ns in folders:
-        storage_context = StorageContext.from_defaults(persist_dir=f"indices/{(''.join(name.split()))}/{ns}")
-        sentence_index = load_index_from_storage(storage_context)
-        indices.append(sentence_index)
-        
+        try:
+            persist_dir = f"indices/{(''.join(name.split()))}/{ns}"
+            logger.info(f"Attempting to load index from: {persist_dir}")
+            
+            if not os.path.exists(persist_dir):
+                logger.warning(f"Directory not found: {persist_dir}")
+                continue
+            
+            storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
+            sentence_index = load_index_from_storage(storage_context)
+            indices.append(sentence_index)
+            logger.info(f"Successfully loaded index from: {persist_dir}")
+        except Exception as e:
+            logger.error(f"Error loading index for {ns}: {str(e)}")
+    
+    logger.info(f"Total indices loaded: {len(indices)}")
     return indices
 
 all_retrievers = []
 
 if folders:
+    logger.info(f"Folders to process: {folders}")
     sentence_index = load_sentence_index(folders)
     all_retrievers = [sns.as_retriever(similarity_top_k=3) for sns in sentence_index]
+    logger.info(f"Total retrievers created: {len(all_retrievers)}")
 
-combination_retriever = CustomRetriever(all_retrievers, top_n=4)
+if all_retrievers:
+    combination_retriever = CustomRetriever(all_retrievers, top_n=4)
+    logger.info("CustomRetriever created successfully")
+else:
+    logger.error("No valid retrievers found. Please check the index files.")
+    st.error("No valid retrievers found. Please check the index files.")
+    st.stop()
 
 # BAAI/bge-reranker-base
 # link: https://huggingface.co/BAAI/bge-reranker-base
