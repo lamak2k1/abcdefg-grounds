@@ -570,12 +570,16 @@ def get_or_create_sheet(mentor_name):
         sheet = spreadsheet.sheet1
         # Add headers to the new sheet
         sheet.append_row(["Timestamp", "Question", "Answer"])
+        # Share the sheet with your personal account
+        spreadsheet.share('kamalprasats@unicult.club', perm_type='user', role='writer')
+        print(f"Created and shared new sheet: https://docs.google.com/spreadsheets/d/{spreadsheet.id}")
     return sheet
 
 def record_qa(mentor_name, question, answer):
     sheet = get_or_create_sheet(mentor_name)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sheet.append_row([timestamp, question, answer])
+    print(f"Recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
 
 if prompt := st.chat_input("Your question..."):  # Prompt for user input and save to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
