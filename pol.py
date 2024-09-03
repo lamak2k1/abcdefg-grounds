@@ -28,6 +28,9 @@ from llama_index.core import QueryBundle
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import datetime
 
 
 
@@ -552,6 +555,28 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
         system_prompt=f"You are {name}'s chatbot trained on all his newsletters, youtube videos and linkedin posts and you have to assist the user who asks questions to you as {name} himself or herself in first person with their queries. You MUST use the same language and tone in the context text given to you when answering a question."
     )
 
+# Set up Google Sheets API credentials
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = Credentials.from_service_account_file('aimentors-8ac58aab995e.json', scopes=scope)
+client = gspread.authorize(creds)
+
+def get_or_create_sheet(mentor_name):
+    try:
+        # Try to open an existing sheet
+        sheet = client.open(mentor_name).sheet1
+    except gspread.SpreadsheetNotFound:
+        # If the sheet doesn't exist, create a new one
+        spreadsheet = client.create(mentor_name)
+        sheet = spreadsheet.sheet1
+        # Add headers to the new sheet
+        sheet.append_row(["Timestamp", "Question", "Answer"])
+    return sheet
+
+def record_qa(mentor_name, question, answer):
+    sheet = get_or_create_sheet(mentor_name)
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    sheet.append_row([timestamp, question, answer])
+
 if prompt := st.chat_input("Your question..."):  # Prompt for user input and save to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     query = prompt
@@ -592,6 +617,9 @@ if st.session_state.messages[-1]["role"] != "assistant":
             # Add response to message history
             message = {"role": "assistant", "content": full_response + disclaimer, "avatar": f"{creatorchatavatar}"}
             st.session_state.messages.append(message)
+
+            # Record the question and answer in Google Sheets
+            record_qa(mentor, prompt, full_response)
 
             # Reset the chat engine
             st.session_state.chat_engine.reset()
