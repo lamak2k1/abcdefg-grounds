@@ -156,7 +156,7 @@ result='null'
 
 Settings.llm = lOpenAI(api_key="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", model = "gpt-4o-mini", temperature=0)
 Settings.chunk_size = 256
-Settings.chunk_overlap = 10
+Settings.chunk_overlap = 30
 
 tabtitle = f"AI {name}"
 pageheader = f"{name}'s Digital Brain 💡"
