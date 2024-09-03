@@ -557,7 +557,7 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
     )
 
 # Set up Google Sheets API credentials
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file']
 creds = Credentials.from_service_account_file('aimentors-8ac58aab995e.json', scopes=scope)
 client = gspread.authorize(creds)
 
@@ -565,6 +565,7 @@ def get_or_create_sheet(mentor_name):
     try:
         # Try to open an existing sheet
         sheet = client.open(mentor_name).sheet1
+        print(f"Opened existing sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
     except gspread.SpreadsheetNotFound:
         # If the sheet doesn't exist, create a new one
         spreadsheet = client.create(mentor_name)
@@ -572,24 +573,46 @@ def get_or_create_sheet(mentor_name):
         # Add headers to the new sheet
         sheet.append_row(["Timestamp", "Question", "Answer"])
         # Share the sheet with your personal account
-        spreadsheet.share('kamalprasats@unicult.club', perm_type='user', role='writer')
-        print(f"Created and shared new sheet: https://docs.google.com/spreadsheets/d/{spreadsheet.id}")
+        try:
+            spreadsheet.share('kamalprasats@unicult.club', perm_type='user', role='writer')
+            print(f"Created and shared new sheet: https://docs.google.com/spreadsheets/d/{spreadsheet.id}")
+        except Exception as e:
+            print(f"Error sharing spreadsheet: {str(e)}")
     return sheet
 
 def record_qa(mentor_name, question, answer):
-    sheet = get_or_create_sheet(mentor_name)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, question, answer])
-    print(f"Recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
+    try:
+        sheet = get_or_create_sheet(mentor_name)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sheet.append_row([timestamp, question, answer])
+        print(f"Successfully recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
+    except Exception as e:
+        print(f"Error recording Q&A: {str(e)}")
 
 def list_all_sheets():
     service = build('sheets', 'v4', credentials=creds)
-    sheet_metadata = service.spreadsheets().get(spreadsheetId='').execute()
-    sheets = sheet_metadata.get('sheets', '')
-    for sheet in sheets:
-        title = sheet.get("properties", {}).get("title", "Sheet1")
-        sheet_id = sheet.get("properties", {}).get("sheetId", 0)
-        print(f"Sheet Title: {title}, Sheet ID: {sheet_id}")
+    
+    # Get all spreadsheets
+    drive_service = build('drive', 'v3', credentials=creds)
+    results = drive_service.files().list(
+        q="mimeType='application/vnd.google-apps.spreadsheet'",
+        fields="files(id, name)").execute()
+    spreadsheets = results.get('files', [])
+    
+    if not spreadsheets:
+        print('No spreadsheets found.')
+    else:
+        print('Spreadsheets:')
+        for spreadsheet in spreadsheets:
+            print(f"- {spreadsheet['name']} (ID: {spreadsheet['id']})")
+            
+            # Get sheets within each spreadsheet
+            sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet['id']).execute()
+            sheets = sheet_metadata.get('sheets', '')
+            for sheet in sheets:
+                title = sheet.get("properties", {}).get("title", "Sheet1")
+                sheet_id = sheet.get("properties", {}).get("sheetId", 0)
+                print(f"  Sheet Title: {title}, Sheet ID: {sheet_id}")
 
 if prompt := st.chat_input("Your question..."):  # Prompt for user input and save to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
