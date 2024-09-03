@@ -32,6 +32,9 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.errors import HttpError
 
 
 
@@ -572,12 +575,40 @@ def get_or_create_sheet(mentor_name):
         sheet = spreadsheet.sheet1
         # Add headers to the new sheet
         sheet.append_row(["Timestamp", "Question", "Answer"])
+        
         # Share the sheet with your personal account
         try:
-            spreadsheet.share('kamalprasats@unicult.club', perm_type='user', role='writer')
-            print(f"Created and shared new sheet: https://docs.google.com/spreadsheets/d/{spreadsheet.id}")
+            drive_service = build('drive', 'v3', credentials=creds)
+            
+            # First, try to get the file to check if the service account has access
+            try:
+                file = drive_service.files().get(fileId=spreadsheet.id).execute()
+                print(f"Successfully accessed the file: {file['name']}")
+            except HttpError as error:
+                print(f"Error accessing the file: {error}")
+            
+            # Now try to share the file
+            user_permission = {
+                'type': 'user',
+                'role': 'writer',
+                'emailAddress': 'kamalprasats@unicult.club'
+            }
+            
+            try:
+                drive_service.permissions().create(
+                    fileId=spreadsheet.id,
+                    body=user_permission,
+                    fields='id',
+                    sendNotificationEmail=True
+                ).execute()
+                print(f"Successfully shared spreadsheet: https://docs.google.com/spreadsheets/d/{spreadsheet.id}")
+            except HttpError as error:
+                print(f"An error occurred while sharing: {error}")
+                # Check if it's a permission error
+                if error.resp.status in [403, 400]:
+                    print("This might be due to insufficient permissions. Please check the service account's permissions.")
         except Exception as e:
-            print(f"Error sharing spreadsheet: {str(e)}")
+            print(f"Error in sharing process: {str(e)}")
     return sheet
 
 def record_qa(mentor_name, question, answer):
