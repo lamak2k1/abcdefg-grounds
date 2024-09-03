@@ -29,8 +29,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.chat_engine import ContextChatEngine
 from pathlib import Path
 import gspread
-from google.oauth2.service_account import Credentials
-from datetime import datetime
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from googleapiclient.errors import HttpError
@@ -559,55 +558,45 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
     )
 
 # Set up Google Sheets API credentials
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file']
-creds = Credentials.from_service_account_file('aimentors-8ac58aab995e.json', scopes=scope)
-client = gspread.authorize(creds)
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+SERVICE_ACCOUNT_FILE = 'aimentors-8ac58aab995e.json'
+ADMIN_EMAIL = 'kamalprasats@unicult.club'
+
+def get_credentials():
+    creds = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    delegated_credentials = creds.with_subject(ADMIN_EMAIL)
+    return delegated_credentials
 
 def get_or_create_sheet(mentor_name):
+    creds = get_credentials()
+    client = gspread.authorize(creds)
+    drive_service = build('drive', 'v3', credentials=creds)
+    sheets_service = build('sheets', 'v4', credentials=creds)
+
     try:
         # Try to open an existing sheet
         sheet = client.open(mentor_name).sheet1
         print(f"Opened existing sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
     except gspread.SpreadsheetNotFound:
         # If the sheet doesn't exist, create a new one
-        spreadsheet = client.create(mentor_name)
-        sheet = spreadsheet.sheet1
+        spreadsheet = {
+            'properties': {
+                'title': mentor_name
+            }
+        }
+        spreadsheet = sheets_service.spreadsheets().create(body=spreadsheet).execute()
+        sheet_id = spreadsheet['spreadsheetId']
+        sheet = client.open_by_key(sheet_id).sheet1
+        
         # Add headers to the new sheet
         sheet.append_row(["Timestamp", "Question", "Answer"])
         
-        # Share the sheet with your personal account
-        try:
-            drive_service = build('drive', 'v3', credentials=creds)
-            
-            # First, try to get the file to check if the service account has access
-            try:
-                file = drive_service.files().get(fileId=spreadsheet.id).execute()
-                print(f"Successfully accessed the file: {file['name']}")
-            except HttpError as error:
-                print(f"Error accessing the file: {error}")
-            
-            # Now try to share the file
-            user_permission = {
-                'type': 'user',
-                'role': 'writer',
-                'emailAddress': 'kamalprasats@unicult.club'
-            }
-            
-            try:
-                drive_service.permissions().create(
-                    fileId=spreadsheet.id,
-                    body=user_permission,
-                    fields='id',
-                    sendNotificationEmail=True
-                ).execute()
-                print(f"Successfully shared spreadsheet: https://docs.google.com/spreadsheets/d/{spreadsheet.id}")
-            except HttpError as error:
-                print(f"An error occurred while sharing: {error}")
-                # Check if it's a permission error
-                if error.resp.status in [403, 400]:
-                    print("This might be due to insufficient permissions. Please check the service account's permissions.")
-        except Exception as e:
-            print(f"Error in sharing process: {str(e)}")
+        print(f"Created new sheet: https://docs.google.com/spreadsheets/d/{sheet_id}")
+
+    # The sheet is already accessible to the admin email (kamalprasats@unicult.club)
+    # because we're using delegated credentials. No need to explicitly share.
+
     return sheet
 
 def record_qa(mentor_name, question, answer):
@@ -620,9 +609,7 @@ def record_qa(mentor_name, question, answer):
         print(f"Error recording Q&A: {str(e)}")
 
 def list_all_sheets():
-    service = build('sheets', 'v4', credentials=creds)
-    
-    # Get all spreadsheets
+    creds = get_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
     results = drive_service.files().list(
         q="mimeType='application/vnd.google-apps.spreadsheet'",
@@ -637,7 +624,8 @@ def list_all_sheets():
             print(f"- {spreadsheet['name']} (ID: {spreadsheet['id']})")
             
             # Get sheets within each spreadsheet
-            sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet['id']).execute()
+            sheets_service = build('sheets', 'v4', credentials=creds)
+            sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=spreadsheet['id']).execute()
             sheets = sheet_metadata.get('sheets', '')
             for sheet in sheets:
                 title = sheet.get("properties", {}).get("title", "Sheet1")
