@@ -31,6 +31,7 @@ from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from googleapiclient.discovery import build
 
 
 
@@ -580,6 +581,15 @@ def record_qa(mentor_name, question, answer):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     sheet.append_row([timestamp, question, answer])
     print(f"Recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
+
+def list_all_sheets():
+    service = build('sheets', 'v4', credentials=creds)
+    sheet_metadata = service.spreadsheets().get(spreadsheetId='').execute()
+    sheets = sheet_metadata.get('sheets', '')
+    for sheet in sheets:
+        title = sheet.get("properties", {}).get("title", "Sheet1")
+        sheet_id = sheet.get("properties", {}).get("sheetId", 0)
+        print(f"Sheet Title: {title}, Sheet ID: {sheet_id}")
 
 if prompt := st.chat_input("Your question..."):  # Prompt for user input and save to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
