@@ -17,4 +17,6 @@ llama-index-llms-groq
 llama-index-llms-gemini
 llama-index-embeddings-huggingface
 google-auth
-# Rebuild triggered on 2024-08-27
+google-auth-oauthlib 
+google-auth-httplib2 
+google-api-python-client
