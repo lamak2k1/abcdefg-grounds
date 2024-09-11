@@ -612,8 +612,8 @@ def get_or_create_sheet(mentor_name):
         sheet_id = spreadsheet['spreadsheetId']
         sheet = client.open_by_key(sheet_id).sheet1
         
-        # Add headers to the new sheet
-        sheet.append_row(["Timestamp", "Question", "Answer"])
+        # Add headers to the new sheet with new columns
+        sheet.append_row(["Timestamp", "Question", "Answer", "Source 1", "Source 2", "Excerpt 1", "Excerpt 2", "Confidence Level"])
         
         print(f"Created new sheet: https://docs.google.com/spreadsheets/d/{sheet_id}")
 
@@ -622,11 +622,11 @@ def get_or_create_sheet(mentor_name):
 
     return sheet
 
-def record_qa(mentor_name, question, answer):
+def record_qa(mentor_name, question, answer, source1, source2, excerpt1, excerpt2, confidence_level):
     try:
         sheet = get_or_create_sheet(mentor_name)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sheet.append_row([timestamp, question, answer])
+        sheet.append_row([timestamp, question, answer, source1, source2, excerpt1, excerpt2, confidence_level])
         print(f"Successfully recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
     except Exception as e:
         print(f"Error recording Q&A: {str(e)}")
@@ -697,7 +697,29 @@ if st.session_state.messages[-1]["role"] != "assistant":
             st.session_state.messages.append(message)
 
             # Record the question and answer in Google Sheets
-            record_qa(mentor, prompt, full_response)
+            if len(source_nodes) >= 2:
+                score_1 = source_nodes[0].score
+                score_2 = source_nodes[1].score
+                sourcetext1 = source_nodes[0].text[:500]  # Limit excerpt to 500 characters
+                sourcetext2 = source_nodes[1].text[:500]  # Limit excerpt to 500 characters
+                
+                source1 = source_nodes[0].metadata.get('page_id', 'N/A')
+                source2 = source_nodes[1].metadata.get('page_id', 'N/A')
+                
+                # Calculate confidence level
+                avg_score = (score_1 + score_2) / 2
+                if avg_score > 0.7:
+                    confidence_level = "Confident"
+                elif 0.5 <= avg_score <= 0.7:
+                    confidence_level = "Moderately Confident"
+                else:
+                    confidence_level = "Less Confident"
+                
+                # Record the question and answer in Google Sheets with new data
+                record_qa(mentor, prompt, full_response, source1, source2, sourcetext1, sourcetext2, confidence_level)
+            else:
+                # If there are fewer than 2 source nodes, use placeholder values
+                record_qa(mentor, prompt, full_response, 'N/A', 'N/A', 'N/A', 'N/A', 'Unknown')
 
             # Reset the chat engine
             st.session_state.chat_engine.reset()
