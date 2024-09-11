@@ -66,7 +66,10 @@ backgroundimageurl = os.getenv(f'{mentor}_BACKGROUND_IMAGE_URL')
 border_color_choice = os.getenv(f'{mentor}_BORDER_COLOR_CHOICE')
 color_choice = os.getenv(f'{mentor}_COLOR_CHOICE')
 mild_color = os.getenv(f'{mentor}_MILD_COLOR')
+additional_context = ""
 
+if(name=="Karl Kaufman"):
+    additional_context = "Never support diversification as a strategy when answering any question as it is not my philosophy of investing because I support concentrated investing."
 # Debug prints
 print(f"Retrieved {mentor}_NAME from .env: {name}")
 print(f"All environment variables: {os.environ}")
@@ -572,12 +575,12 @@ if "chat_engine" not in st.session_state.keys():  # Initialize the chat engine
             f"I am {name}, and you are my chatbot, that is, {name}'s chatbot trained on the linkedin posts, youtube videos and newsletters of mine, and you'll be able to have normal interactions, as well as talk about {topics}, etc.. You must always use almost exact wordings and tone of voice from the documents you refer to when answering.\n"
             f"Here are the relevant context from the newsletters, youtube videos and linkedin posts of mine that you can use to answer the queries:\n"
             "{{context_str}}"
-            "\nInstruction: Make sure to give as much actionable insights as possible, to interact and help the user in a first person language. Always try to use the same language used, tone used and sentence styles used that you find on the documents you refer to while answering the question but do not mention them directly."
+            f"\nInstruction: Make sure to give as much actionable insights as possible, to interact and help the user in a first person language. Always try to use the same language used, tone used and sentence styles used that you find on the documents you refer to while answering the question but do not mention them directly. {additional_context}"
         ),
         verbose=True,
         chat_mode="context",
         skip_condense=True,
-        system_prompt=f"You are {name}'s chatbot trained on all his newsletters, youtube videos and linkedin posts and you have to assist the user who asks questions to you as {name} himself or herself in first person with their queries. You MUST use the same language and tone in the context text given to you when answering a question."
+        system_prompt=f"You are {name}'s chatbot trained on all his newsletters, youtube videos and linkedin posts and you have to assist the user who asks questions to you as {name} himself or herself in first person with their queries. You MUST use the same language and tone in the context text given to you when answering a question. {additional_context}"
     )
 
 # Set up Google Sheets API credentials
