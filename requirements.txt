@@ -22,6 +22,6 @@ google-auth-httplib2
 google-api-python-client
 fastapi
 uvicorn
-aiogram
-aiohttp
+aiogram==3.13.0
+aiohttp==3.10.5
 
