@@ -7,8 +7,8 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from aiogram.utils import executor
 from dotenv import load_dotenv
-import sys
-from urllib.parse import urljoin, urlencode
+from urllib.parse import parse_qs, urlencode
+from urllib.parse import urljoin
 
 # Load environment variables
 load_dotenv()
@@ -20,19 +20,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Get the Telegram bot token and FastAPI base URL from environment variables
+# Get the Telegram bot token and FastAPI URL from environment variables
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-FASTAPI_BASE_URL = os.getenv('FASTAPI_BASE_URL', 'https://abcdefg-fastapi.onrender.com/chat/')
+FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://abcdefg-fastapi.onrender.com/chat')
 
 if not TELEGRAM_TOKEN:
     raise ValueError("No TELEGRAM_TOKEN found in environment variables")
-
-
-# Get the name from command-line argument
-if len(sys.argv) > 1:
-    CHAT_NAME = sys.argv[1]
-else:
-    raise ValueError("Please provide a name as a command-line argument")
 
 # Initialize bot and dispatcher
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
@@ -55,16 +48,17 @@ async def cmd_help(message: types.Message):
 # Handler for text messages
 @dp.message_handler(lambda message: message.text and not message.text.startswith('/'))
 async def handle_message(message: types.Message):
-    user_message = message.text
-    payload = {"prompt": user_message}
+    # Extract name from URL query parameter
+    query_string = message.web_app_data.query_string if message.web_app_data else ''
+    query_params = parse_qs(query_string)
+    name = query_params.get('name', ['Anonymous'])[0]
 
-    # Construct the full URL with query parameters
-    query_params = urlencode({"name": CHAT_NAME})
-    full_url = urljoin(FASTAPI_BASE_URL, f"?{query_params}")
+    user_message = message.text
+    payload = {"name": name, "prompt": user_message}
 
     try:
         # Use the global session
-        async with session.post(full_url, json=payload) as resp:
+        async with session.post(FASTAPI_URL, params=payload) as resp:
             if resp.status == 200:
                 data = await resp.json()
                 answer = data.get('answer', 'Sorry, I could not understand your question.')
