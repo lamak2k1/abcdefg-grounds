@@ -2,6 +2,7 @@
 import os
 import logging
 import aiohttp
+import sys
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
@@ -13,10 +14,12 @@ from urllib.parse import urljoin
 # Load environment variables
 load_dotenv()
 
-# Extract name from URL query parameter (assuming it's passed as an environment variable)
-query_string = os.getenv('QUERY_STRING', '')
-query_params = parse_qs(query_string)
-CHAT_NAME = query_params.get('name', ['Anonymous'])[0]
+# Get the chat name from command line argument
+if len(sys.argv) > 1:
+    CHAT_NAME = sys.argv[1]
+else:
+    print("Please provide a chat name as a command line argument.")
+    sys.exit(1)
 
 # Construct dynamic environment variable name for Telegram token
 TELEGRAM_TOKEN_VAR = f"TELEGRAM_TOKEN_{CHAT_NAME.upper()}"
