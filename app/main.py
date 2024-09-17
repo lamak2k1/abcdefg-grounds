@@ -22,7 +22,11 @@ from llama_index.core.indices.loading import load_index_from_storage
 from llama_index.core.chat_engine import ContextChatEngine
 from llama_index.core.schema import NodeWithScore
 from openai import OpenAI
-
+from fastapi.middleware.cors import CORSMiddleware
+import gspread
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from datetime import datetime
 
 import logging
 
@@ -163,6 +167,53 @@ def load_indices(mentor_name):
             logger.error(f"Error loading index for {ns}: {str(e)}")
     return indices
 
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+SERVICE_ACCOUNT_FILE = 'aimentors-8ac58aab995e.json'
+ADMIN_EMAIL = 'kamalprasats@unicult.club'
+
+def get_credentials():
+    creds = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    delegated_credentials = creds.with_subject(ADMIN_EMAIL)
+    return delegated_credentials
+
+def get_or_create_sheet(mentor_key):
+    creds = get_credentials()
+    client = gspread.authorize(creds)
+    drive_service = build('drive', 'v3', credentials=creds)
+    sheets_service = build('sheets', 'v4', credentials=creds)
+
+    try:
+        # Try to open an existing sheet
+        sheet = client.open(mentor_key).sheet1
+        logger.info(f"Opened existing sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
+    except gspread.SpreadsheetNotFound:
+        # If the sheet doesn't exist, create a new one
+        spreadsheet = {
+            'properties': {
+                'title': mentor_key
+            }
+        }
+        spreadsheet = sheets_service.spreadsheets().create(body=spreadsheet).execute()
+        sheet_id = spreadsheet['spreadsheetId']
+        sheet = client.open_by_key(sheet_id).sheet1
+        
+        # Add headers to the new sheet with new columns
+        sheet.append_row(["Timestamp", "Question", "Answer", "Source 1", "Source 2", "Excerpt 1", "Excerpt 2", "Confidence Level"])
+        
+        logger.info(f"Created new sheet: https://docs.google.com/spreadsheets/d/{sheet_id}")
+
+    return sheet
+
+def record_qa(mentor_key, question, answer, source1, source2, excerpt1, excerpt2, confidence_level):
+    try:
+        sheet = get_or_create_sheet(mentor_key)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sheet.append_row([timestamp, question, answer, source1, source2, excerpt1, excerpt2, confidence_level])
+        logger.info(f"Successfully recorded Q&A in sheet: https://docs.google.com/spreadsheets/d/{sheet.spreadsheet.id}")
+    except Exception as e:
+        logger.error(f"Error recording Q&A: {str(e)}")
+
 # Endpoint for chat
 @app.post("/chat", response_model=ChatResponse)
 async def chat(name: str = Query(..., description="Mentor name"), prompt: str = Query(..., description="User prompt")):
@@ -170,6 +221,7 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
         # Load mentor configuration
         config = load_mentor_config(name)
         mentor_name = config["name"]
+        mentor_key = name.upper()  # This is the key we'll use for the sheet name
         topics = config["topics"]
         additional_context = config["additional_context"]
 
@@ -252,8 +304,42 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
             score2=score_2
         )
 
+        # Record the question and answer in Google Sheets
+        if len(source_nodes) >= 2:
+            score_1 = source_nodes[0].score
+            score_2 = source_nodes[1].score
+            sourcetext1 = source_nodes[0].node.text[:500]  # Limit excerpt to 500 characters
+            sourcetext2 = source_nodes[1].node.text[:500]  # Limit excerpt to 500 characters
+            
+            source1 = source_nodes[0].node.metadata.get('page_id', 'N/A')
+            source2 = source_nodes[1].node.metadata.get('page_id', 'N/A')
+            
+            # Calculate confidence level
+            avg_score = (score_1 + score_2) / 2
+            if avg_score > 0.7:
+                confidence_level = "Confident"
+            elif 0.5 <= avg_score <= 0.7:
+                confidence_level = "Moderately Confident"
+            else:
+                confidence_level = "Less Confident"
+            
+            # Record the question and answer in Google Sheets with new data
+            record_qa(mentor_key, prompt, full_response, source1, source2, sourcetext1, sourcetext2, confidence_level)
+        else:
+            # If there are fewer than 2 source nodes, use placeholder values
+            record_qa(mentor_key, prompt, full_response, 'N/A', 'N/A', 'N/A', 'N/A', 'Unknown')
+
         return response
 
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Allow all origins (for development). In production, specify allowed origins.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace "*" with a list of allowed origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
