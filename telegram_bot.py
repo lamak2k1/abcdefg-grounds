@@ -23,6 +23,7 @@ else:
 
 # Construct dynamic environment variable name for Telegram token
 TELEGRAM_TOKEN_VAR = f"TELEGRAM_TOKEN_{CHAT_NAME.upper()}"
+starter_message_var = f"STARTER_MESSAGE_{CHAT_NAME.upper()}"
 
 # Get the Telegram bot token and FastAPI URL from environment variables
 TELEGRAM_TOKEN = os.getenv(TELEGRAM_TOKEN_VAR)
@@ -49,7 +50,7 @@ session = aiohttp.ClientSession()
 # Handler for /start command
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
-    await message.reply("Hello! Ask me anything on stock market investing.")
+    await message.reply(f"Hello! {starter_message_var}")
 
 # Handler for /help command
 @dp.message_handler(commands=['help'])
