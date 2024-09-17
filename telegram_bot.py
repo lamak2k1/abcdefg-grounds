@@ -13,19 +13,27 @@ from urllib.parse import urljoin
 # Load environment variables
 load_dotenv()
 
+# Extract name from URL query parameter (assuming it's passed as an environment variable)
+query_string = os.getenv('QUERY_STRING', '')
+query_params = parse_qs(query_string)
+CHAT_NAME = query_params.get('name', ['Anonymous'])[0]
+
+# Construct dynamic environment variable name for Telegram token
+TELEGRAM_TOKEN_VAR = f"TELEGRAM_TOKEN_{CHAT_NAME.upper()}"
+
+# Get the Telegram bot token and FastAPI URL from environment variables
+TELEGRAM_TOKEN = os.getenv(TELEGRAM_TOKEN_VAR)
+FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://abcdefg-fastapi.onrender.com/chat')
+
+if not TELEGRAM_TOKEN:
+    raise ValueError(f"No {TELEGRAM_TOKEN_VAR} found in environment variables")
+
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-# Get the Telegram bot token and FastAPI URL from environment variables
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://abcdefg-fastapi.onrender.com/chat')
-
-if not TELEGRAM_TOKEN:
-    raise ValueError("No TELEGRAM_TOKEN found in environment variables")
 
 # Initialize bot and dispatcher
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
@@ -48,13 +56,8 @@ async def cmd_help(message: types.Message):
 # Handler for text messages
 @dp.message_handler(lambda message: message.text and not message.text.startswith('/'))
 async def handle_message(message: types.Message):
-    # Extract name from URL query parameter
-    query_string = message.web_app_data.query_string if message.web_app_data else ''
-    query_params = parse_qs(query_string)
-    name = query_params.get('name', ['Anonymous'])[0]
-
     user_message = message.text
-    payload = {"name": name, "prompt": user_message}
+    payload = {"name": CHAT_NAME, "prompt": user_message}
 
     try:
         # Use the global session
@@ -108,7 +111,7 @@ async def unknown_command(message: types.Message):
     await message.reply("Sorry, I didn't understand that command.")
 
 async def on_startup(dp: Dispatcher):
-    logger.info("Bot started!")
+    logger.info(f"Bot started! CHAT_NAME: {CHAT_NAME}, Token Variable: {TELEGRAM_TOKEN_VAR}")
 
 async def on_shutdown(dp: Dispatcher):
     await session.close()  # Close the aiohttp session
