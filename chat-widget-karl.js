@@ -1,113 +1,119 @@
-// chat-widget.js
+<!-- Chat Widget Script -->
+<div id="chatbot">
+  <div id="chatbot-header" onclick="toggleChatbot()">Chat with Us</div>
+  <div id="chatbot-body">
+    <div id="chatbot-messages"></div>
+    <input type="text" id="chatbot-input" placeholder="Type your message..." onkeypress="handleKeyPress(event)" />
+  </div>
+</div>
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Create chat icon
-  var chatIcon = document.createElement('div');
-  chatIcon.id = 'chat-icon';
-  chatIcon.style.position = 'fixed';
-  chatIcon.style.bottom = '20px';
-  chatIcon.style.right = '20px';
-  chatIcon.style.width = '60px';
-  chatIcon.style.height = '60px';
-  chatIcon.style.backgroundColor = '#007bff';
-  chatIcon.style.borderRadius = '50%';
-  chatIcon.style.cursor = 'pointer';
-  chatIcon.style.zIndex = '1000';
-  chatIcon.style.display = 'flex';
-  chatIcon.style.alignItems = 'center';
-  chatIcon.style.justifyContent = 'center';
-  chatIcon.style.color = '#ffffff';
-  chatIcon.style.fontSize = '30px';
-  chatIcon.innerHTML = '&#128172;'; // Speech balloon emoji
-  document.body.appendChild(chatIcon);
+<style>
+  /* Chatbot Styles */
+  #chatbot {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    font-family: Arial, sans-serif;
+  }
 
-  // Create chat window
-  var chatWindow = document.createElement('div');
-  chatWindow.id = 'chat-window';
-  chatWindow.style.position = 'fixed';
-  chatWindow.style.bottom = '90px';
-  chatWindow.style.right = '20px';
-  chatWindow.style.width = '300px';
-  chatWindow.style.height = '400px';
-  chatWindow.style.backgroundColor = '#ffffff';
-  chatWindow.style.border = '1px solid #ccc';
-  chatWindow.style.borderRadius = '10px';
-  chatWindow.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
-  chatWindow.style.display = 'none';
-  chatWindow.style.flexDirection = 'column';
-  chatWindow.style.overflow = 'hidden';
-  chatWindow.style.zIndex = '1000';
-  document.body.appendChild(chatWindow);
+  #chatbot-header {
+    background-color: #007bff;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    text-align: center;
+  }
 
-  // Chat header
-  var chatHeader = document.createElement('div');
-  chatHeader.style.backgroundColor = '#007bff';
-  chatHeader.style.color = '#ffffff';
-  chatHeader.style.padding = '10px';
-  chatHeader.style.textAlign = 'center';
-  chatHeader.innerText = 'Chat with Us';
-  chatWindow.appendChild(chatHeader);
+  #chatbot-body {
+    display: none;
+    background-color: #f1f1f1;
+    border: 1px solid #007bff;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+  }
 
-  // Chat messages
-  var chatMessages = document.createElement('div');
-  chatMessages.id = 'chat-messages';
-  chatMessages.style.flex = '1';
-  chatMessages.style.padding = '10px';
-  chatMessages.style.overflowY = 'auto';
-  chatWindow.appendChild(chatMessages);
+  #chatbot-messages {
+    height: 200px;
+    padding: 10px;
+    overflow-y: auto;
+    background-color: #ffffff;
+  }
 
-  // Chat input
-  var chatInput = document.createElement('input');
-  chatInput.type = 'text';
-  chatInput.id = 'chat-input';
-  chatInput.placeholder = 'Type your message...';
-  chatInput.style.width = '100%';
-  chatInput.style.border = 'none';
-  chatInput.style.borderTop = '1px solid #ccc';
-  chatInput.style.padding = '10px';
-  chatInput.style.outline = 'none';
-  chatWindow.appendChild(chatInput);
+  #chatbot-messages p {
+    margin: 5px 0;
+  }
 
-  // Toggle chat window
-  chatIcon.addEventListener('click', function() {
-    chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
-  });
+  #chatbot-messages .user-message {
+    text-align: right;
+    color: #000000;
+  }
 
-  // Handle message sending
-  chatInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      var message = chatInput.value.trim();
-      if (message === '') return;
-      appendMessage('You', message, 'user-message');
-      chatInput.value = '';
+  #chatbot-messages .bot-message {
+    text-align: left;
+    color: #007bff;
+  }
 
-      // Send the message to your backend API
-      fetch('https://abcdefg-fastapi.onrender.com/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: message, name: 'karl' }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          var reply = data.answer || 'Sorry, I did not understand that.';
-          appendMessage('Bot', reply, 'bot-message');
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          appendMessage('Bot', 'Sorry, there was an error processing your request.', 'bot-message');
-        });
+  #chatbot-input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: none;
+    border-top: 1px solid #ccc;
+    outline: none;
+  }
+</style>
+
+<script>
+  // Chatbot JavaScript
+  function toggleChatbot() {
+    const chatbotBody = document.getElementById('chatbot-body');
+    chatbotBody.style.display = chatbotBody.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+      sendMessage();
     }
-  });
+  }
+
+  function sendMessage() {
+    const inputField = document.getElementById('chatbot-input');
+    const message = inputField.value.trim();
+    if (message === '') return;
+
+    appendMessage('You', message, 'user-message');
+    inputField.value = '';
+
+    // Encode the mentor name and message to use in query parameters
+    const mentorName = encodeURIComponent('karl'); // Replace with your mentor's name
+    const userPrompt = encodeURIComponent(message);
+
+    // Build the URL with query parameters
+    const apiUrl = `https://abcdefg-fastapi.onrender.com/chat?name=${mentorName}&prompt=${userPrompt}`;
+
+    // Send the message to the backend API
+    fetch(apiUrl, {
+      method: 'POST',
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        const reply = data.answer || 'Sorry, I did not understand that.';
+        appendMessage('Bot', reply, 'bot-message');
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        appendMessage('Bot', 'Sorry, there was an error processing your request.', 'bot-message');
+      });
+  }
 
   function appendMessage(sender, message, className) {
-    var messagesContainer = document.getElementById('chat-messages');
-    var messageElement = document.createElement('div');
+    const messagesContainer = document.getElementById('chatbot-messages');
+    const messageElement = document.createElement('p');
     messageElement.className = className;
-    messageElement.style.margin = '5px 0';
-    messageElement.innerHTML = '<strong>' + sender + ':</strong> ' + message;
+    messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
-});
+</script>
