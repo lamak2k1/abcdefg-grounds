@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var thinkingMessageId = appendMessage('Bot', 'Thinking...', 'bot-message thinking');
 
       // Encode the mentor name and message to use in query parameters
-      const mentorName = encodeURIComponent('Mentor Name');
+      const mentorName = encodeURIComponent('karl');
       const userPrompt = encodeURIComponent(message);
 
       // Send the message to your backend API
