@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const userPrompt = encodeURIComponent(message);
 
       // Send the message to your backend API
-      fetch(`https://your-backend.com/chat?name=${mentorName}&prompt=${userPrompt}`, {
+      fetch(`https://abcdefg-fastapi.onrender.com/chat?name=${mentorName}&prompt=${userPrompt}`, {
         method: 'POST',
       })
         .then((response) => response.json())
