@@ -112,6 +112,8 @@
             border-radius: 20px;
             display: inline-block;
             margin-bottom: 10px;
+            min-width: 80px; /* Ensure minimum width to fit "Thinking..." */
+            text-align: center; /* Center the text */
         }
         .error {
             color: #e0245e;
@@ -258,18 +260,19 @@
         var contentElement = document.createElement('div');
         contentElement.className = 'message';
 
-        if (sender === 'Bot') {
-            // Render Markdown using Marked.js
+        if (sender === 'Bot' && message === 'Thinking...') {
+            contentElement.className = 'thinking';
+            contentElement.textContent = message;
+        } else if (sender === 'Bot') {
             contentElement.innerHTML = marked.parse(message);
         } else {
-            // For user messages, escape HTML to prevent XSS
             contentElement.textContent = message;
         }
 
         messageElement.appendChild(contentElement);
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        return messageElement.id = 'msg-' + Date.now(); // Return an ID for the message
+        return messageElement.id = 'msg-' + Date.now();
     }
 
     function removeMessage(messageId) {
