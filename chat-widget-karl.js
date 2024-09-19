@@ -107,6 +107,11 @@
         .thinking {
             font-style: italic;
             color: #657786;
+            padding: 10px 15px;
+            background-color: #f1f3f5;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 10px;
         }
         .error {
             color: #e0245e;
@@ -187,6 +192,11 @@
     chatInput.id = 'chat-input';
     chatInput.placeholder = 'Type your message...';
     chatWindow.appendChild(chatInput);
+
+    // Add starter message
+    var mentorName = 'Karl'; // Replace with the actual mentor name
+    var starterMessage = `Hey, this is ${mentorName.upper()}, This is my AI version trained on all my knowledge. Ask it anything...`;
+    appendMessage('Bot', starterMessage, 'bot-message');
 
     // Toggle chat window
     chatIcon.addEventListener('click', function() {
