@@ -199,6 +199,13 @@
     var mentorName = 'Karl'; // Replace with the actual mentor name
     var starterMessage = `Hey, this is ${mentorName}. This is my AI version trained on all my knowledge. Ask me anything...`;
 
+    // Add backlink
+    var backlink = document.createElement('a');
+    backlink.href = 'https://aimentors.me';
+    backlink.textContent = 'Powered by AIMentors';
+    backlink.style.cssText = 'font-size: 10px; color: #999; text-decoration: none; position: absolute; bottom: 5px; right: 10px;';
+    chatWindow.appendChild(backlink);
+
     // Toggle chat window
     chatIcon.addEventListener('click', function() {
         if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
