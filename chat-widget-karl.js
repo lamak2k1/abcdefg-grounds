@@ -195,16 +195,23 @@
 
     // Add starter message
     var mentorName = 'Karl'; // Replace with the actual mentor name
-    var starterMessage = `Hey, this is ${mentorName.upper()}, This is my AI version trained on all my knowledge. Ask it anything...`;
-    appendMessage('Bot', starterMessage, 'bot-message');
+    var starterMessage = `Hey, this is ${mentorName}. This is my AI version trained on all my knowledge. Ask me anything...`;
 
     // Toggle chat window
     chatIcon.addEventListener('click', function() {
-        chatWindow.style.display = chatWindow.style.display === 'none' || chatWindow.style.display === '' ? 'flex' : 'none';
+        if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
+            chatWindow.style.display = 'flex';
+            if (chatMessages.children.length === 0) {
+                appendMessage('Bot', starterMessage, 'bot-message');
+            }
+        } else {
+            chatWindow.style.display = 'none';
+        }
     });
 
     // Close chat window
-    chatClose.addEventListener('click', function() {
+    chatClose.addEventListener('click', function(event) {
+        event.stopPropagation(); // Prevent the click from triggering the chatIcon click event
         chatWindow.style.display = 'none';
     });
 
