@@ -81,22 +81,29 @@ document.addEventListener('DOMContentLoaded', function() {
       appendMessage('You', message, 'user-message');
       chatInput.value = '';
 
+      // Show "Thinking..." message
+      var thinkingMessageId = appendMessage('Bot', 'Thinking...', 'bot-message thinking');
+
       // Encode the mentor name and message to use in query parameters
-      const mentorName = encodeURIComponent('karl');
+      const mentorName = encodeURIComponent('Mentor Name');
       const userPrompt = encodeURIComponent(message);
 
       // Send the message to your backend API
-      fetch(`https://abcdefg-fastapi.onrender.com/chat?name=${mentorName}&prompt=${userPrompt}`, {
+      fetch(`https://your-backend.com/chat?name=${mentorName}&prompt=${userPrompt}`, {
         method: 'POST',
       })
         .then((response) => response.json())
         .then((data) => {
           var reply = data.answer || 'Sorry, I did not understand that.';
+          // Remove "Thinking..." message and append the actual reply
+          removeMessage(thinkingMessageId);
           appendMessage('Bot', reply, 'bot-message');
         })
         .catch((error) => {
           console.error('Error:', error);
-          appendMessage('Bot', 'Sorry, there was an error processing your request.', 'bot-message');
+          // Remove "Thinking..." message and append the error message
+          removeMessage(thinkingMessageId);
+          appendMessage('Bot', 'Sorry, there was an error processing your request.', 'bot-message error');
         });
     }
   });
@@ -109,5 +116,13 @@ document.addEventListener('DOMContentLoaded', function() {
     messageElement.innerHTML = '<strong>' + sender + ':</strong> ' + message;
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return messageElement.id = 'msg-' + Date.now(); // Return an ID for the message
+  }
+
+  function removeMessage(messageId) {
+    var messageElement = document.getElementById(messageId);
+    if (messageElement) {
+      messageElement.remove();
+    }
   }
 });
