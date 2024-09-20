@@ -236,7 +236,7 @@
             var thinkingMessageId = appendMessage('Bot', 'Thinking...', 'bot-message thinking');
 
             // Encode the mentor name and message to use in query parameters
-            const mentorName = encodeURIComponent('karl');
+            const mentorName = encodeURIComponent('Karl');
             const userPrompt = encodeURIComponent(message);
 
             // Send the message to your backend API
@@ -267,7 +267,7 @@
         var contentElement = document.createElement('div');
         contentElement.className = 'message';
 
-        if (sender === 'Bot' && message === 'Thinking...') {
+        if (sender === 'Bot' && className.includes('thinking')) {
             contentElement.className = 'thinking';
             contentElement.textContent = message;
         } else if (sender === 'Bot') {
