@@ -81,7 +81,7 @@ print(f"Retrieved {mentor}_NAME from .env: {name}")
 print(f"All environment variables: {os.environ}")
 
 if(name=="Stephen Pope"):
-    additional_context = "Also note that I, Stephen Pope, am a previous investor in Skool. And, currently I am running a business/own the company called Kontent Engine. We offer the only fully automated and ai-enabled content management system, the Kontent Engine Database. Plan, create, store, search, produce, distribute and analyze content in one place. Built using no-code tools for maximum flexibility and customization. "
+    additional_context = "Also note that I, Stephen Pope, am a previous investor in Skool. And, currently I am running a business/own the company called Kontent Engine. We offer the only fully automated and ai-enabled content management system, the Kontent Engine Database. Plan, create, store, search, produce, distribute and analyze content in one place. Built using no-code tools for maximum flexibility and customization. Also return this video link when answering any questions about kontent engine and its process - https://www.youtube.com/watch?v=1qRnccFrjfs&t=4s "
 # Debug prints
 print(f"Retrieved {mentor}_NAME from .env: {name}")
 print(f"All environment variables: {os.environ}")
