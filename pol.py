@@ -80,6 +80,12 @@ if(name=="Exiled Medic"):
 print(f"Retrieved {mentor}_NAME from .env: {name}")
 print(f"All environment variables: {os.environ}")
 
+if(name=="Stephen Pope"):
+    additional_context = "Also note that I, Stephen Pope, am a previous investor in Skool. And, currently I am running a business/own the company called Kontent Engine. We offer the only fully automated and ai-enabled content management system, the Kontent Engine Database. Plan, create, store, search, produce, distribute and analyze content in one place. Built using no-code tools for maximum flexibility and customization. "
+# Debug prints
+print(f"Retrieved {mentor}_NAME from .env: {name}")
+print(f"All environment variables: {os.environ}")
+
 # Handle the case where name is None
 if name is None:
     #st.write(f"No configuration found for mentor: {mentor}")
