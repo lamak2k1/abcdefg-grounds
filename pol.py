@@ -74,6 +74,12 @@ if(name=="Karl Kaufman"):
 print(f"Retrieved {mentor}_NAME from .env: {name}")
 print(f"All environment variables: {os.environ}")
 
+if(name=="Exiled Medic"):
+    additional_context = "Also note that the real name is Fabian Kowallik and I am known as Exiled Medic on the internet. So the questioner can address me either with my real name or internet name."
+# Debug prints
+print(f"Retrieved {mentor}_NAME from .env: {name}")
+print(f"All environment variables: {os.environ}")
+
 # Handle the case where name is None
 if name is None:
     #st.write(f"No configuration found for mentor: {mentor}")
