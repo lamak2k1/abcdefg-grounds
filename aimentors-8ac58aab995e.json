@@ -1,13 +1,3 @@
-{
-  "type": "service_account",
-  "project_id": "aimentors",
-  "private_key_id": "8ac58aab995e0d9bd36cbad96230a8b1842676fd",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC5rB2xwC6VNy/Q\npChWKJoihIQCOHOPC3dH17bbQDh5AQIgDDSB8VKIZZJExG/J9CSd2lsVaSRUVVso\nz6hBfeASNPEyI2Vqg7Jbpgc8xqtf4YloHh0cC6hCc7/QaPCMhdeer8PG5GjXG9wq\nRzpnQ3EQxUQw9x5z5sRhcLUbDzyZQibfMhSRJalPQaftrXm/W0qHQ+uYmxWO2rS3\nParmIAZkik+lFWtXWbUFjTzI/grE6iwckIqpp4kI8T/2ZgGGqik4uhwO/l7mJHBq\n0CBhIntfsur/JUhexsbDYSjUUXRF/e4W+2TtQQcxZXgeQIIw94i3WRNhBknrqH2e\n3DLzYbFxAgMBAAECggEAAr+WngpyH3Uvxi3daF5ULnMa0UaQBj1z7xMJF4N54fk1\nmyd+IY1RGoHnxe0pxi5ieTNKj938qwbpHeE5uFcCoDQGAW2ubaGnJyjnnpcRkkfN\nCeWvHT8PV5+CqPvB7Fim+4BAam58kSWdfyQ7iKMFYSBp2yIKjrQGx/HGo7DDiAK6\ncTVkw18D4Vm0EryytU/WzXlg1n9Xd+fR26aJqe7NfwJhhsTbkbI9ezlsfTW5BM4v\nqipYrsvZ1g60eaIwXwYU8Theco0bF/glQXcP4gIq5BeckzD9HZkdvyQxAGChTHcg\nR3u6XIfu04JwFyYp3vhSK5/qqYxWkJ2bzRezE5Q1FQKBgQDo+dWtqzsgfTnRJYuW\naxVkdHOcNaXvTi2/UyR7LOFRVkSG/l/BGQqaqGmvV/cjmO4ybb99PnUig8gG9SL+\nDNDTFLwusUP8ehRISsx7x2AV/QR3CDUJj11LK5mums3ap/S+E6O8FriP3sg4Gqln\n/pMqnF95EfiCyP9/drGJRJ7SWwKBgQDMBYamYCMhq60j7jYEZQbRMGdKcR1g+uoi\nVArTfjFO/5TyGyEK3y+uOoWH9coQ9Fcs2SwnCsOCXKb5vvWhCNuJ2M99DV5oeMRM\nIo0S7JbRLxl4ebTFYm/2NMhN4KvllUweeyVzyqc144dvQlaGqmbn3rZj0y4t2usX\nfLvigAX9IwKBgD1f+9PJpUT02HNpsbFJupQBPaesVm+Jp/GcRKMSerVDxb/OaYlk\nQG/n6BeiU+AT3MR6NxUWjCMwllSG5dYJqEXDU6P1XRS5UHiPA/mj14NTaYa2Kcq/\n8vLnpI/kBlERKB+e6uaVEcAND7AADhrwbPKvyVMK0e4aZ3y71x9zbWe7AoGAP5NB\nQDsY93cNvvKN9pScqTcSGMpiw0OtDgFuVjUunFVcTo1RoJenvf0SeymGS/435AvQ\njGH4RnkktxJgbEvcTXo4Pdman6dyU984YrtCy/CHWVljkVZ5WRldiZcHOcVqMN1i\n8FAoBszd+TeMyu3ynzJxV24JJ9TeCTWfPpdyRk0CgYBHM+I+WtB99us8xsmuepUd\ntkxYqdYNCG4oOjenIwb+BaWwDoOyFpJEdv2axhO8swXjxC7+atOzIgDdYKOfHAoB\nkIdNfkgzkqNJ5frcfhd5bPIpFYtU67oJ7Gk0TLvup93gIFm03GX/b9TNrr+pZG2l\nTlUvgm3rB40TUkX1Bmgxtw==\n-----END PRIVATE KEY-----\n",
-  "client_email": "aimentors-tracker@aimentors.iam.gserviceaccount.com",
-  "client_id": "100454570559006435910",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/aimentors-tracker%40aimentors.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:dfab7af6739bc596369eeeb8c6f49f0bce6b270d4e24fff2af7a9fc241312c65
+size 2368

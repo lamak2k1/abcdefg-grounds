@@ -1,1 +1,3 @@
-{"index_store/data": {"fa146612-db63-498d-bf29-9d44155d4261": {"__type__": "vector_store", "__data__": "{\"index_id\": \"fa146612-db63-498d-bf29-9d44155d4261\", \"summary\": null, \"nodes_dict\": {\"767755ba-4d56-4c71-8a37-4e45c055fa65\": \"767755ba-4d56-4c71-8a37-4e45c055fa65\", \"aaf83b7a-792d-455e-9ee9-3909332765a6\": \"aaf83b7a-792d-455e-9ee9-3909332765a6\", \"820384f0-03f5-4406-b225-b74ffa26bd43\": \"820384f0-03f5-4406-b225-b74ffa26bd43\", \"b746e529-85cd-47c1-aa77-1034f28d3cf3\": \"b746e529-85cd-47c1-aa77-1034f28d3cf3\", \"b4e09fda-fd6d-44ef-a19e-f10aa44f1384\": \"b4e09fda-fd6d-44ef-a19e-f10aa44f1384\", \"0e61804f-4752-454a-a622-7a7ca2258555\": \"0e61804f-4752-454a-a622-7a7ca2258555\"}, \"doc_id_dict\": {}, \"embeddings_dict\": {}}"}}}
+version https://git-lfs.github.com/spec/v1
+oid sha256:0076f3d7c392a2e675ba93f5111a59a5fb9fc91b9d66d2bce8b33fd1e95c171f
+size 751
