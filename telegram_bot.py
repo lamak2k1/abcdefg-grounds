@@ -9,8 +9,7 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from aiogram.utils import executor
 from dotenv import load_dotenv
-from urllib.parse import parse_qs, urlencode
-from urllib.parse import urljoin
+from urllib.parse import parse_qs, urlencode, urljoin
 import json
 
 # Load environment variables
@@ -79,18 +78,19 @@ async def handle_message(message: types.Message):
         if session is None or session.closed:
             session = aiohttp.ClientSession()
 
-        async with session.post(FASTAPI_URL, params=payload, timeout=60) as resp:
+        # Correctly use JSON payload for POST
+        async with session.post(FASTAPI_URL, json=payload, timeout=60) as resp:
             if resp.status == 200:
                 full_response = ""
                 source_info = None
                 async for chunk in resp.content.iter_any():
                     decoded_chunk = chunk.decode('utf-8')
-                    
+
                     # Check if the chunk is the source information JSON
                     if decoded_chunk.startswith('\n{') and decoded_chunk.endswith('}'):
                         source_info = json.loads(decoded_chunk.strip())
                         break
-                    
+
                     full_response += decoded_chunk
 
                     if len(full_response) > MAX_MESSAGE_LENGTH:
@@ -123,6 +123,7 @@ async def handle_message(message: types.Message):
                 await thinking_message.edit_text('Sorry, there was an error processing your request.')
                 error_text = await resp.text()
                 logger.error(f"Error {resp.status}: {error_text}")
+
     except aiohttp.ClientError as e:
         await message.reply('An error occurred while connecting to the server.')
         logger.error(f"HTTP Client Error: {e}")
@@ -145,20 +146,6 @@ async def on_shutdown(dp: Dispatcher):
     await session.close()  # Close the aiohttp session
     await bot.close()
     logger.info("Bot and session shutdown!")
-
-async def main():
-    try:
-        offset = 0
-        while True:
-            updates = await bot.get_updates(offset=offset, timeout=30)
-            for update in updates:
-                offset = update.update_id + 1
-                await dp.process_update(update)
-    except Exception as e:
-        logger.error(f"Error in main: {e}")
-    finally:
-        await dp.storage.close()
-        await dp.storage.wait_closed()
 
 if __name__ == "__main__":
     executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown, skip_updates=True)
