@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List
 import os
@@ -32,6 +33,8 @@ import logging
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
+# Add this constant at the top of the file
+DISCLAIMER = "Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only."
 
 def generate_title(prompt, sourcetext):
     client = OpenAI(api_key=OPENAI_API_KEY)
@@ -45,7 +48,8 @@ def generate_title(prompt, sourcetext):
             model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": constructed_prompt},
-            ]
+            ],
+            timeout=30  # Add a timeout of 30 seconds
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -215,17 +219,17 @@ def record_qa(mentor_key, question, answer, source1, source2, excerpt1, excerpt2
         logger.error(f"Error recording Q&A: {str(e)}")
 
 # Endpoint for chat
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat")
 async def chat(name: str = Query(..., description="Mentor name"), prompt: str = Query(..., description="User prompt")):
     try:
         # Load mentor configuration
         config = load_mentor_config(name)
         mentor_name = config["name"]
-        mentor_key = name.upper()  # This is the key we'll use for the sheet name
+        mentor_key = name.upper()
         topics = config["topics"]
         additional_context = config["additional_context"]
 
-        # Initialize LLM settings
+        # Initialize LLM settings and chat engine
         llm = LlamaOpenAI(
             api_key=OPENAI_API_KEY,
             model="gpt-4o-mini",
@@ -267,69 +271,50 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
             embed_model=embedding_model,
         )
 
-        # Generate response
+        # Generate streaming response
         stream_response = chat_engine.stream_chat(prompt)
 
-        # Collect the full response and source nodes
-        full_response = ""
-        for token in stream_response.response_gen:
-            full_response += token
+        MAX_RESPONSE_LENGTH = 4000  # Telegram's message limit is 4096 characters
 
-        source_nodes = stream_response.source_nodes
+        async def response_generator():
+            full_response = ""
+            source_nodes = []
 
-        score_1 = source_nodes[0].score
-        score_2 = source_nodes[1].score
+            # Handle the response generation
+            for token in stream_response.response_gen:
+                full_response += token
+                if len(full_response) <= MAX_RESPONSE_LENGTH:
+                    yield token.encode('utf-8')
+                else:
+                    break
 
-        # Extract sources
-        source1 = source_nodes[0].node.metadata.get('page_id', 'N/A') if len(source_nodes) > 0 else 'N/A'
-        source2 = source_nodes[1].node.metadata.get('page_id', 'N/A') if len(source_nodes) > 1 else 'N/A'
-        if 'page' in source_nodes[0].metadata:
-            title1 = f"{mentor_name}'s Book - Page {source_nodes[0].metadata['page']}"
-        else:
-            title1 = generate_title(prompt, source_nodes[0].node.text)
-        if 'page' in source_nodes[1].metadata:
-            title2 = f"{mentor_name}'s Book - Page {source_nodes[1].metadata['page']}"
-        else:
-            title2 = generate_title(prompt, source_nodes[1].node.text)
+            # Get the source nodes after streaming is complete
+            source_nodes = stream_response.source_nodes
 
-        # Prepare response
-        response = ChatResponse(
-            prompt=prompt,
-            answer=full_response,
-            source1=source1,
-            source2=source2,
-            title1=title1,
-            title2=title2,
-            score1=score_1,
-            score2=score_2
-        )
-
-        # Record the question and answer in Google Sheets
-        if len(source_nodes) >= 2:
-            score_1 = source_nodes[0].score
-            score_2 = source_nodes[1].score
-            sourcetext1 = source_nodes[0].node.text[:500]  # Limit excerpt to 500 characters
-            sourcetext2 = source_nodes[1].node.text[:500]  # Limit excerpt to 500 characters
-            
-            source1 = source_nodes[0].node.metadata.get('page_id', 'N/A')
-            source2 = source_nodes[1].node.metadata.get('page_id', 'N/A')
-            
-            # Calculate confidence level
-            avg_score = (score_1 + score_2) / 2
-            if avg_score > 0.7:
-                confidence_level = "Confident"
-            elif 0.5 <= avg_score <= 0.7:
-                confidence_level = "Moderately Confident"
+            # Process source nodes and record Q&A
+            if len(source_nodes) >= 2:
+                score_1 = source_nodes[0].score
+                score_2 = source_nodes[1].score
+                sourcetext1 = source_nodes[0].node.text[:500]  # Limit excerpt to 500 characters
+                sourcetext2 = source_nodes[1].node.text[:500]  # Limit excerpt to 500 characters
+                
+                source1 = source_nodes[0].node.metadata.get('page_id', 'N/A')
+                source2 = source_nodes[1].node.metadata.get('page_id', 'N/A')
+                
+                # Calculate confidence level
+                avg_score = (score_1 + score_2) / 2
+                confidence_level = "Confident" if avg_score > 0.7 else "Moderately Confident" if 0.5 <= avg_score <= 0.7 else "Less Confident"
+                
+                # Record the Q&A in Google Sheets
+                record_qa(mentor_key, prompt, full_response, source1, source2, sourcetext1, sourcetext2, confidence_level)
             else:
-                confidence_level = "Less Confident"
-            
-            # Record the question and answer in Google Sheets with new data
-            record_qa(mentor_key, prompt, full_response, source1, source2, sourcetext1, sourcetext2, confidence_level)
-        else:
-            # If there are fewer than 2 source nodes, use placeholder values
-            record_qa(mentor_key, prompt, full_response, 'N/A', 'N/A', 'N/A', 'N/A', 'Unknown')
+                # If there are fewer than 2 source nodes, use placeholder values
+                record_qa(mentor_key, prompt, full_response, 'N/A', 'N/A', 'N/A', 'N/A', 'Unknown')
 
-        return response
+            # Yield the disclaimer at the end
+            yield f"\n\n{DISCLAIMER}".encode('utf-8')
+
+        return StreamingResponse(response_generator(), media_type="text/plain")
 
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}")
