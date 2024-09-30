@@ -32,6 +32,7 @@ import json
 import logging
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+DISCLAIMER = "This is AI-generated content. While I strive for accuracy, please verify important information."
 
 def generate_title(prompt, sourcetext):
     client = OpenAI(api_key=OPENAI_API_KEY)
@@ -273,6 +274,9 @@ async def chat(request: ChatRequest):
             for chunk in stream_response.response_gen:
                 full_response += chunk
                 yield chunk.encode('utf-8')
+            
+            # Add disclaimer
+            yield f"\n\n{DISCLAIMER}".encode('utf-8')
             
             # Get source nodes
             source_nodes = stream_response.source_nodes
