@@ -39,10 +39,7 @@ if not TELEGRAM_TOKEN:
     raise ValueError(f"No {TELEGRAM_TOKEN_VAR} found in environment variables")
 
 # Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize bot and dispatcher
@@ -50,8 +47,10 @@ bot = Bot(token=TELEGRAM_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
-# Initialize a global aiohttp session
+# Global variable for the session
 session = None
+
+MAX_MESSAGE_LENGTH = 4000
 
 # Handler for /start command
 @dp.message_handler(commands=['start'])
@@ -62,8 +61,6 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=['help'])
 async def cmd_help(message: types.Message):
     await message.reply("Just type your question and I will try to answer.")
-
-MAX_MESSAGE_LENGTH = 4000
 
 # Handler for text messages
 @dp.message_handler(lambda message: message.text and not message.text.startswith('/'))
@@ -144,13 +141,14 @@ async def on_shutdown(dp: Dispatcher):
     await bot.close()
     logger.info("Bot and session shutdown!")
 
-def main():
-    executor.start_polling(
-        dp,
-        skip_updates=True,
-        on_startup=on_startup,
-        on_shutdown=on_shutdown
-    )
+async def main():
+    try:
+        await dp.start_polling(reset_webhook=True)
+    except Exception as e:
+        logger.error(f"Error in main: {e}")
+    finally:
+        await dp.storage.close()
+        await dp.storage.wait_closed()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
