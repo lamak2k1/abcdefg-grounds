@@ -11,6 +11,7 @@ from aiogram.utils import executor
 from dotenv import load_dotenv
 from urllib.parse import parse_qs, urlencode
 from urllib.parse import urljoin
+import json
 
 # Load environment variables
 load_dotenv()
@@ -81,9 +82,15 @@ async def handle_message(message: types.Message):
             if resp.status == 200:
                 full_response = ""
                 first_chunk = True
-                source1 = source2 = None
+                source_info = None
                 async for chunk in resp.content.iter_any():
                     decoded_chunk = chunk.decode('utf-8')
+                    
+                    # Check if the chunk is the source information JSON
+                    if decoded_chunk.startswith('\n{') and decoded_chunk.endswith('}'):
+                        source_info = json.loads(decoded_chunk.strip())
+                        break
+                    
                     full_response += decoded_chunk
 
                     if len(full_response) > MAX_MESSAGE_LENGTH:
@@ -99,18 +106,13 @@ async def handle_message(message: types.Message):
                         await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
                         await asyncio.sleep(0.1)  # Add a small delay to avoid rate limiting
 
-                # Extract source information from the response
-                if 'Source 1:' in full_response:
-                    source1 = full_response.split('Source 1:')[1].split('\n')[0].strip()
-                if 'Source 2:' in full_response:
-                    source2 = full_response.split('Source 2:')[1].split('\n')[0].strip()
-
                 # Create inline keyboard with source buttons
                 keyboard = InlineKeyboardMarkup()
-                if source1:
-                    keyboard.add(InlineKeyboardButton("Source 1", url=source1))
-                if source2:
-                    keyboard.add(InlineKeyboardButton("Source 2", url=source2))
+                if source_info:
+                    if source_info["source1"]:
+                        keyboard.add(InlineKeyboardButton(source_info["source1"]["title"], url=source_info["source1"]["url"]))
+                    if source_info["source2"]:
+                        keyboard.add(InlineKeyboardButton(source_info["source2"]["title"], url=source_info["source2"]["url"]))
 
                 # Final update to ensure we've sent everything
                 if full_response != thinking_message.text:
