@@ -3,6 +3,7 @@ import os
 import logging
 import aiohttp
 import sys
+import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
@@ -29,6 +30,9 @@ STARTER_MESSAGE_VAR = f"STARTER_MESSAGE_{CHAT_NAME.upper()}"
 TELEGRAM_TOKEN = os.getenv(TELEGRAM_TOKEN_VAR)
 FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://abcdefg-fastapi.onrender.com/chat')
 STARTER_MESSAGE = os.getenv(STARTER_MESSAGE_VAR, "Welcome to the chat!")
+
+# Define the DISCLAIMER constant
+DISCLAIMER = "Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only."
 
 if not TELEGRAM_TOKEN:
     raise ValueError(f"No {TELEGRAM_TOKEN_VAR} found in environment variables")
@@ -58,6 +62,9 @@ async def cmd_start(message: types.Message):
 async def cmd_help(message: types.Message):
     await message.reply("Just type your question and I will try to answer.")
 
+
+MAX_MESSAGE_LENGTH = 4000
+
 # Handler for text messages
 @dp.message_handler(lambda message: message.text and not message.text.startswith('/'))
 async def handle_message(message: types.Message):
@@ -65,42 +72,39 @@ async def handle_message(message: types.Message):
     payload = {"name": CHAT_NAME, "prompt": user_message}
 
     try:
-        # Use the global session
-        async with session.post(FASTAPI_URL, params=payload) as resp:
+        # Send a typing action
+        await bot.send_chat_action(message.chat.id, 'typing')
+
+        # Send an initial "thinking" message
+        thinking_message = await message.reply("Thinking...")
+
+        async with session.post(FASTAPI_URL, params=payload, timeout=60) as resp:
             if resp.status == 200:
-                data = await resp.json()
-                answer = data.get('answer', 'Sorry, I could not understand your question.')
+                full_response = ""
+                first_chunk = True
+                async for chunk in resp.content.iter_any():
+                    decoded_chunk = chunk.decode('utf-8')
+                    full_response += decoded_chunk
 
-                # Initialize keyboard as None
-                keyboard = None
+                    if len(full_response) > MAX_MESSAGE_LENGTH:
+                        full_response = full_response[:MAX_MESSAGE_LENGTH] + "... (truncated)"
+                        break
 
-                # Extract titles, sources, and scores from the response
-                title1 = data.get('title1')
-                source1 = data.get('source1')
-                score1 = data.get('score1', 0)
-                
-                title2 = data.get('title2')
-                source2 = data.get('source2')
-                score2 = data.get('score2', 0)
+                    if first_chunk:
+                        # Replace "Thinking..." with the first part of the response
+                        await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
+                        first_chunk = False
+                    elif len(full_response) % 100 == 0 or DISCLAIMER in full_response:
+                        # Update the message periodically or when we receive the disclaimer
+                        await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
+                        await asyncio.sleep(0.1)  # Add a small delay to avoid rate limiting
 
-                # Check if both scores are greater than 0.7 and all necessary fields are present
-                if (score1 > 0.7 and score2 > 0.7 and
-                    title1 and source1 and title2 and source2):
-                    
-                    # Create inline keyboard with two buttons
-                    keyboard = InlineKeyboardMarkup(row_width=2).add(
-                        InlineKeyboardButton(text=title1.strip('"'), url=source1),
-                        InlineKeyboardButton(text=title2.strip('"'), url=source2)
-                    )
-
-                # Reply with answer and conditional keyboard
-                if keyboard:
-                    await message.reply(answer, reply_markup=keyboard)
-                else:
-                    await message.reply(answer)
+                # Final update to ensure we've sent everything
+                if full_response != thinking_message.text:
+                    await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
 
             else:
-                await message.reply('Sorry, there was an error processing your request.')
+                await thinking_message.edit_text('Sorry, there was an error processing your request.')
                 error_text = await resp.text()
                 logger.error(f"Error {resp.status}: {error_text}")
     except aiohttp.ClientError as e:
