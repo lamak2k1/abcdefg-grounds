@@ -28,6 +28,7 @@ import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime
+import json
 
 import logging
 
@@ -301,6 +302,10 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
                 source1 = source_nodes[0].node.metadata.get('page_id', 'N/A')
                 source2 = source_nodes[1].node.metadata.get('page_id', 'N/A')
                 
+                # Generate titles for sources
+                title1 = generate_title(prompt, sourcetext1)
+                title2 = generate_title(prompt, sourcetext2)
+                
                 # Calculate confidence level
                 avg_score = (score_1 + score_2) / 2
                 confidence_level = "Confident" if avg_score > 0.7 else "Moderately Confident" if 0.5 <= avg_score <= 0.7 else "Less Confident"
@@ -310,11 +315,17 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
             else:
                 # If there are fewer than 2 source nodes, use placeholder values
                 record_qa(mentor_key, prompt, full_response, 'N/A', 'N/A', 'N/A', 'N/A', 'Unknown')
+                title1 = title2 = None
 
             # Yield the disclaimer at the end
             yield f"\n\n{DISCLAIMER}".encode('utf-8')
-            yield f"Source 1: {source1}\n".encode('utf-8')
-            yield f"Source 2: {source2}\n".encode('utf-8')
+            
+            # Yield source information as JSON
+            source_info = {
+                "source1": {"url": source1, "title": title1} if source1 and title1 else None,
+                "source2": {"url": source2, "title": title2} if source2 and title2 else None
+            }
+            yield f"\n{json.dumps(source_info)}".encode('utf-8')
 
         return StreamingResponse(response_generator(), media_type="text/plain")
 
