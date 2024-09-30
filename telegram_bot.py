@@ -75,7 +75,7 @@ async def handle_message(message: types.Message):
                     if '{"source1"' in text:
                         split_text = text.split('{"source1"')
                         answer += split_text[0]
-                        source_info_json = '{"source1"' + split_text[1]
+                        source_info_json = '{"source1"' + split_text[1].strip()
                         break
                     else:
                         answer += text
@@ -111,7 +111,6 @@ async def handle_message(message: types.Message):
                     await message.reply(answer, reply_markup=keyboard)
                 else:
                     await message.reply(answer)
-
             else:
                 await message.reply('Sorry, there was an error processing your request.')
                 error_text = await resp.text()
@@ -129,6 +128,9 @@ async def unknown_command(message: types.Message):
     await message.reply("Sorry, I didn't understand that command.")
 
 async def on_startup(dp: Dispatcher):
+    global session
+    if session is None or session.closed:
+        session = aiohttp.ClientSession()
     logger.info(f"Bot started! CHAT_NAME: {CHAT_NAME}, Token Variable: {TELEGRAM_TOKEN_VAR}")
 
 async def on_shutdown(dp: Dispatcher):
