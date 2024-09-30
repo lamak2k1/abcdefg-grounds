@@ -313,6 +313,8 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
 
             # Yield the disclaimer at the end
             yield f"\n\n{DISCLAIMER}".encode('utf-8')
+            yield f"Source 1: {source1}\n".encode('utf-8')
+            yield f"Source 2: {source2}\n".encode('utf-8')
 
         return StreamingResponse(response_generator(), media_type="text/plain")
 
