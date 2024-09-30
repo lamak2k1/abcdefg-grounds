@@ -32,7 +32,7 @@ import json
 import logging
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-DISCLAIMER = "This AI can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only."
+DISCLAIMER = "Disclaimer : This AI can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only."
 
 def generate_title(prompt, sourcetext):
     client = OpenAI(api_key=OPENAI_API_KEY)
