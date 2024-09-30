@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List
@@ -29,13 +29,9 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime
 import json
-
 import logging
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
-# Add this constant at the top of the file
-DISCLAIMER = "Disclaimer: This AI Chatbot can make mistakes. Please verify the information. This chatbot is intended for educational and informational purposes only."
 
 def generate_title(prompt, sourcetext):
     client = OpenAI(api_key=OPENAI_API_KEY)
@@ -75,22 +71,15 @@ Settings.llm = LlamaOpenAI(
     temperature=0,
 )
 
-
 embedding_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
 Settings.embed_model = embedding_model
 Settings.chunk_size = 256
 Settings.chunk_overlap = 30
 
-# Define the response model
-class ChatResponse(BaseModel):
+# Define the request model
+class ChatRequest(BaseModel):
+    name: str
     prompt: str
-    answer: str
-    source1: str
-    source2: str
-    title1: str
-    title2: str
-    score1: float
-    score2: float
 
 # Custom Retriever
 class CustomRetriever(BaseRetriever):
@@ -221,16 +210,20 @@ def record_qa(mentor_key, question, answer, source1, source2, excerpt1, excerpt2
 
 # Endpoint for chat
 @app.post("/chat")
-async def chat(name: str = Query(..., description="Mentor name"), prompt: str = Query(..., description="User prompt")):
+async def chat(request: ChatRequest):
     try:
+        # Extract data from the request
+        name = request.name
+        prompt = request.prompt
+
         # Load mentor configuration
         config = load_mentor_config(name)
         mentor_name = config["name"]
-        mentor_key = name.upper()
+        mentor_key = name.upper()  # This is the key we'll use for the sheet name
         topics = config["topics"]
         additional_context = config["additional_context"]
 
-        # Initialize LLM settings and chat engine
+        # Initialize LLM settings
         llm = LlamaOpenAI(
             api_key=OPENAI_API_KEY,
             model="gpt-4o-mini",
@@ -274,58 +267,29 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
 
         # Generate streaming response
         stream_response = chat_engine.stream_chat(prompt)
-
-        MAX_RESPONSE_LENGTH = 4000  # Telegram's message limit is 4096 characters
-
+        
         async def response_generator():
             full_response = ""
-            source_nodes = []
-
-            # Handle the response generation
-            for token in stream_response.response_gen:
-                full_response += token
-                if len(full_response) <= MAX_RESPONSE_LENGTH:
-                    yield token.encode('utf-8')
-                else:
-                    break
-
-            # Get the source nodes after streaming is complete
+            for chunk in stream_response.response_gen:
+                full_response += chunk
+                yield chunk.encode('utf-8')
+            
+            # Get source nodes
             source_nodes = stream_response.source_nodes
 
-            # Process source nodes and record Q&A
+            # Process source nodes and generate source information
             if len(source_nodes) >= 2:
-                score_1 = source_nodes[0].score
-                score_2 = source_nodes[1].score
-                sourcetext1 = source_nodes[0].node.text
-                sourcetext2 = source_nodes[1].node.text
-                
                 source1 = source_nodes[0].node.metadata.get('page_id', 'N/A')
                 source2 = source_nodes[1].node.metadata.get('page_id', 'N/A')
+                title1 = generate_title(prompt, source_nodes[0].node.text[:500])
+                title2 = generate_title(prompt, source_nodes[1].node.text[:500])
                 
-                # Generate titles for sources
-                title1 = generate_title(prompt, sourcetext1)
-                title2 = generate_title(prompt, sourcetext2)
-                
-                # Calculate confidence level
-                avg_score = (score_1 + score_2) / 2
-                confidence_level = "Confident" if avg_score > 0.7 else "Moderately Confident" if 0.5 <= avg_score <= 0.7 else "Less Confident"
-                
-                # Record the Q&A in Google Sheets
-                record_qa(mentor_key, prompt, full_response, source1, source2, sourcetext1, sourcetext2, confidence_level)
-            else:
-                # If there are fewer than 2 source nodes, use placeholder values
-                record_qa(mentor_key, prompt, full_response, 'N/A', 'N/A', 'N/A', 'N/A', 'Unknown')
-                title1 = title2 = None
-
-            # Yield the disclaimer at the end
-            yield f"\n\n{DISCLAIMER}".encode('utf-8')
-            
-            # Yield source information as JSON with a clear delimiter
-            source_info = {
-                "source1": {"url": source1, "title": title1} if source1 and title1 else None,
-                "source2": {"url": source2, "title": title2} if source2 and title2 else None
-            }
-            yield f"\n{{\"source1\": {json.dumps(source_info.get('source1'))}, \"source2\": {json.dumps(source_info.get('source2'))}}}".encode('utf-8')
+                # Yield source information as JSON with a clear delimiter
+                source_info = {
+                    "source1": {"url": source1, "title": title1},
+                    "source2": {"url": source2, "title": title2}
+                }
+                yield f"\n{{\"source1\": {json.dumps(source_info['source1'])}, \"source2\": {json.dumps(source_info['source2'])}}}".encode('utf-8')
 
         return StreamingResponse(response_generator(), media_type="text/plain")
 
