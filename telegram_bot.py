@@ -63,6 +63,9 @@ async def handle_message(message: types.Message):
     user_message = message.text
     payload = {"name": CHAT_NAME, "prompt": user_message}
 
+    # Send waiting message
+    waiting_message = await message.reply("Gimme a couple seconds, I'm thinking the best answer for your question...")
+
     try:
         # Use the global session
         async with session.post(FASTAPI_URL, json=payload) as resp:
@@ -106,19 +109,28 @@ async def handle_message(message: types.Message):
                         InlineKeyboardButton(text=title2.strip('"'), url=url2)
                     )
 
+                # Remove waiting message
+                await bot.delete_message(chat_id=waiting_message.chat.id, message_id=waiting_message.message_id)
+
                 # Reply with answer and conditional keyboard
                 if keyboard:
                     await message.reply(answer, reply_markup=keyboard)
                 else:
                     await message.reply(answer)
             else:
+                # Remove waiting message
+                await bot.delete_message(chat_id=waiting_message.chat.id, message_id=waiting_message.message_id)
                 await message.reply('Sorry, there was an error processing your request.')
                 error_text = await resp.text()
                 logger.error(f"Error {resp.status}: {error_text}")
     except aiohttp.ClientError as e:
+        # Remove waiting message
+        await bot.delete_message(chat_id=waiting_message.chat.id, message_id=waiting_message.message_id)
         await message.reply('An error occurred while connecting to the server.')
         logger.error(f"HTTP Client Error: {e}")
     except Exception as e:
+        # Remove waiting message
+        await bot.delete_message(chat_id=waiting_message.chat.id, message_id=waiting_message.message_id)
         await message.reply('An unexpected error occurred. Please try again later.')
         logger.error(f"Unexpected Exception: {e}")
 
