@@ -50,7 +50,7 @@ dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
 # Initialize a global aiohttp session
-session = aiohttp.ClientSession()
+session = None
 
 # Handler for /start command
 @dp.message_handler(commands=['start'])
@@ -61,7 +61,6 @@ async def cmd_start(message: types.Message):
 @dp.message_handler(commands=['help'])
 async def cmd_help(message: types.Message):
     await message.reply("Just type your question and I will try to answer.")
-
 
 MAX_MESSAGE_LENGTH = 4000
 
@@ -82,6 +81,7 @@ async def handle_message(message: types.Message):
             if resp.status == 200:
                 full_response = ""
                 first_chunk = True
+                source1 = source2 = None
                 async for chunk in resp.content.iter_any():
                     decoded_chunk = chunk.decode('utf-8')
                     full_response += decoded_chunk
@@ -99,9 +99,22 @@ async def handle_message(message: types.Message):
                         await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
                         await asyncio.sleep(0.1)  # Add a small delay to avoid rate limiting
 
+                # Extract source information from the response
+                if 'Source 1:' in full_response:
+                    source1 = full_response.split('Source 1:')[1].split('\n')[0].strip()
+                if 'Source 2:' in full_response:
+                    source2 = full_response.split('Source 2:')[1].split('\n')[0].strip()
+
+                # Create inline keyboard with source buttons
+                keyboard = InlineKeyboardMarkup()
+                if source1:
+                    keyboard.add(InlineKeyboardButton("Source 1", url=source1))
+                if source2:
+                    keyboard.add(InlineKeyboardButton("Source 2", url=source2))
+
                 # Final update to ensure we've sent everything
                 if full_response != thinking_message.text:
-                    await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
+                    await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
             else:
                 await thinking_message.edit_text('Sorry, there was an error processing your request.')
@@ -120,6 +133,8 @@ async def unknown_command(message: types.Message):
     await message.reply("Sorry, I didn't understand that command.")
 
 async def on_startup(dp: Dispatcher):
+    global session
+    session = aiohttp.ClientSession()
     logger.info(f"Bot started! CHAT_NAME: {CHAT_NAME}, Token Variable: {TELEGRAM_TOKEN_VAR}")
 
 async def on_shutdown(dp: Dispatcher):
