@@ -64,7 +64,7 @@ async def handle_message(message: types.Message):
     payload = {"name": CHAT_NAME, "prompt": user_message}
 
     # Send waiting message
-    waiting_message = await message.reply("Gimme a couple seconds, I'm thinking the best answer for your question...")
+    waiting_message = await message.reply("Gimme a couple of seconds, I am thinking what's the best answer to your question...")
 
     try:
         # Use the global session
