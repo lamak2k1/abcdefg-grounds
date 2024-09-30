@@ -296,8 +296,8 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
             if len(source_nodes) >= 2:
                 score_1 = source_nodes[0].score
                 score_2 = source_nodes[1].score
-                sourcetext1 = source_nodes[0].node.text[:500]  # Limit excerpt to 500 characters
-                sourcetext2 = source_nodes[1].node.text[:500]  # Limit excerpt to 500 characters
+                sourcetext1 = source_nodes[0].node.text
+                sourcetext2 = source_nodes[1].node.text
                 
                 source1 = source_nodes[0].node.metadata.get('page_id', 'N/A')
                 source2 = source_nodes[1].node.metadata.get('page_id', 'N/A')
