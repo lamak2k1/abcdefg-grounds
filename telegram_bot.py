@@ -107,13 +107,16 @@ async def handle_message(message: types.Message):
                 # Create inline keyboard with source buttons
                 keyboard = InlineKeyboardMarkup(row_width=1)
                 if source_info:
-                    if source_info["source1"]:
+                    if source_info.get("source1"):
                         keyboard.add(InlineKeyboardButton(source_info["source1"]["title"], url=source_info["source1"]["url"]))
-                    if source_info["source2"]:
+                    if source_info.get("source2"):
                         keyboard.add(InlineKeyboardButton(source_info["source2"]["title"], url=source_info["source2"]["url"]))
 
                 # Final update to ensure we've sent everything
-                await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+                if keyboard.inline_keyboard:
+                    await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+                else:
+                    await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
 
             else:
                 await thinking_message.edit_text('Sorry, there was an error processing your request.')
