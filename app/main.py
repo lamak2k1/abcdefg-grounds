@@ -320,12 +320,12 @@ async def chat(name: str = Query(..., description="Mentor name"), prompt: str = 
             # Yield the disclaimer at the end
             yield f"\n\n{DISCLAIMER}".encode('utf-8')
             
-            # Yield source information as JSON
+            # Yield source information as JSON with a clear delimiter
             source_info = {
                 "source1": {"url": source1, "title": title1} if source1 and title1 else None,
                 "source2": {"url": source2, "title": title2} if source2 and title2 else None
             }
-            yield f"\n{json.dumps(source_info)}".encode('utf-8')
+            yield f"\n{{\"source1\": {json.dumps(source_info.get('source1'))}, \"source2\": {json.dumps(source_info.get('source2'))}}}".encode('utf-8')
 
         return StreamingResponse(response_generator(), media_type="text/plain")
 
