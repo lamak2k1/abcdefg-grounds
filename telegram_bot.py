@@ -81,7 +81,6 @@ async def handle_message(message: types.Message):
         async with session.post(FASTAPI_URL, params=payload, timeout=60) as resp:
             if resp.status == 200:
                 full_response = ""
-                first_chunk = True
                 source_info = None
                 async for chunk in resp.content.iter_any():
                     decoded_chunk = chunk.decode('utf-8')
@@ -97,17 +96,16 @@ async def handle_message(message: types.Message):
                         full_response = full_response[:MAX_MESSAGE_LENGTH] + "... (truncated)"
                         break
 
-                    if first_chunk:
-                        # Replace "Thinking..." with the first part of the response
-                        await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
-                        first_chunk = False
-                    elif len(full_response) % 100 == 0 or DISCLAIMER in full_response:
-                        # Update the message periodically or when we receive the disclaimer
+                    # Update the message periodically
+                    if len(full_response) % 100 == 0:
                         await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML)
                         await asyncio.sleep(0.1)  # Add a small delay to avoid rate limiting
 
+                # Remove the JSON string from the full_response
+                full_response = full_response.split('\n{')[0].strip()
+
                 # Create inline keyboard with source buttons
-                keyboard = InlineKeyboardMarkup()
+                keyboard = InlineKeyboardMarkup(row_width=1)
                 if source_info:
                     if source_info["source1"]:
                         keyboard.add(InlineKeyboardButton(source_info["source1"]["title"], url=source_info["source1"]["url"]))
@@ -115,8 +113,7 @@ async def handle_message(message: types.Message):
                         keyboard.add(InlineKeyboardButton(source_info["source2"]["title"], url=source_info["source2"]["url"]))
 
                 # Final update to ensure we've sent everything
-                if full_response != thinking_message.text:
-                    await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML, reply_markup=keyboard)
+                await thinking_message.edit_text(full_response, parse_mode=ParseMode.HTML, reply_markup=keyboard)
 
             else:
                 await thinking_message.edit_text('Sorry, there was an error processing your request.')
