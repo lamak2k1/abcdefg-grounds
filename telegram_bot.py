@@ -65,6 +65,7 @@ async def cmd_help(message: types.Message):
 # Handler for text messages
 @dp.message_handler(lambda message: message.text and not message.text.startswith('/'))
 async def handle_message(message: types.Message):
+    global session
     user_message = message.text
     payload = {"name": CHAT_NAME, "prompt": user_message}
 
@@ -74,6 +75,9 @@ async def handle_message(message: types.Message):
 
         # Send an initial "thinking" message
         thinking_message = await message.reply("Thinking...")
+
+        if session is None or session.closed:
+            session = aiohttp.ClientSession()
 
         async with session.post(FASTAPI_URL, params=payload, timeout=60) as resp:
             if resp.status == 200:
@@ -133,7 +137,8 @@ async def unknown_command(message: types.Message):
 
 async def on_startup(dp: Dispatcher):
     global session
-    session = aiohttp.ClientSession()
+    if session is None or session.closed:
+        session = aiohttp.ClientSession()
     logger.info(f"Bot started! CHAT_NAME: {CHAT_NAME}, Token Variable: {TELEGRAM_TOKEN_VAR}")
 
 async def on_shutdown(dp: Dispatcher):
@@ -143,7 +148,12 @@ async def on_shutdown(dp: Dispatcher):
 
 async def main():
     try:
-        await dp.start_polling(reset_webhook=True)
+        offset = 0
+        while True:
+            updates = await bot.get_updates(offset=offset, timeout=30)
+            for update in updates:
+                offset = update.update_id + 1
+                await dp.process_update(update)
     except Exception as e:
         logger.error(f"Error in main: {e}")
     finally:
@@ -151,4 +161,4 @@ async def main():
         await dp.storage.wait_closed()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown, skip_updates=True)
