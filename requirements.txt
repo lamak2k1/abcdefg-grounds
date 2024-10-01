@@ -21,6 +21,7 @@ google-auth-oauthlib
 google-auth-httplib2 
 google-api-python-client
 fastapi
+pyrebase4
 uvicorn
 aiogram==2.25.1
 aiohttp==3.8.6
